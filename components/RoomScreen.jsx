@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import * as SecureStore from 'expo-secure-store';
 import BannerView from './BannerView';
 import { 
     ScrollView, 
@@ -64,6 +65,7 @@ const inclineWord = ( howMany, ofWhat ) => {
 
 
 export default function RoomScreen ({navigation, route}) {
+    const [deviceId, setDeviceId] = useState(null)
     const [isLoading, setIsLoading] = useState(true);
     const dictionary = route.params.dictionary;
     const isOverdue = route.params.isOverdue;

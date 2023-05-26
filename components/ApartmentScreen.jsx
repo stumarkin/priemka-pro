@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import BannerView from './BannerView';
 import { 
   Alert, 
@@ -75,11 +76,12 @@ const getDeviceId = async () => {
 }
 
 export default function ApartmentScreen ({navigation, route}) {
+    const [deviceId, setDeviceId] = useState(null)
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [form, setForm] = useState({});
     const [isOverdue, setIsOverdue] = useState(false);
-    const overdueAfterSeconds = 60 * 2;
+    const overdueAfterSeconds = 60 * 60 *24;
     const [dictionary, setDictionary] = useState({});
     const isPro = route.params.isPro;
     const updateStoredForms = () => route.params.updateStoredForms();
@@ -145,8 +147,9 @@ export default function ApartmentScreen ({navigation, route}) {
 
     // Initial loading
     useEffect(() => {
+
       getDeviceId()
-      .then(deviceId =>{ 
+      .then( deviceId => { 
           setDeviceId(deviceId)
           init('c8698f1fccc72a1744388b9e1341b833', deviceId);
           track('ApartmentScreen-View'); 
@@ -157,7 +160,6 @@ export default function ApartmentScreen ({navigation, route}) {
         const dictionary = res.data ;
         setDictionary( dictionary );
         const url = `https://priemka-pro.ru/api/v2/?method=getform${route.params.formId ? `&id=${route.params.formId}` : '' }`
-        console.log(url);
         
         axios.get(url)
         .then(res => {
@@ -178,54 +180,52 @@ export default function ApartmentScreen ({navigation, route}) {
 
 
   
-    // Sending to server
+    // Sending form to server
     const sendForm = ( ) => {
-        setForm( form );
+        form.deviceid = deviceId;
+        setForm(form);
         let formData = new FormData();
-        console.log( `Sending: ${form.id}` );
-        formData.append('form', JSON.stringify( form ) );
         const summary = {
-          address: form.address,
-          checksCountTotal: form.apartment
-                            .map( room => { 
-                              return room.nested
-                                          .map( section => (section.nested.reduce( (sum, check) => (sum += 1), 0)) )
-                                          .reduce( (sum, sectionChecksCount) => {
-                                            return sum += sectionChecksCount
-                                          }, 0 ) 
-                            })
-                            .reduce( (sum, roomChecksCountInAllSections) => { 
-                              return sum += roomChecksCountInAllSections
-                            }, 0 ),
-          failChecksCountTotal: form.apartment
-                        .map( room => { 
-                          return room.nested
-                                      .map( section => (section.nested.reduce( (sum, check) => (sum += check.value===false ? 1 : 0), 0)) )
-                                      .reduce( (sum, sectionChecksCount) => {
-                                        return sum += sectionChecksCount
-                                      }, 0 ) 
-                        })
-                        .reduce( (sum, roomChecksCountInAllSections) => { 
-                          return sum += roomChecksCountInAllSections
-                        }, 0 ),
-        } 
-
-
-        formData.append('summary', JSON.stringify( summary ) );
+            address: form.address,
+            checksCountTotal: form.apartment
+                .map(room => {
+                    return room.nested
+                        .map(section => (section.nested.reduce((sum, check) => (sum += 1), 0)))
+                        .reduce((sum, sectionChecksCount) => {
+                            return sum += sectionChecksCount
+                        }, 0)
+                })
+                .reduce((sum, roomChecksCountInAllSections) => {
+                    return sum += roomChecksCountInAllSections
+                }, 0),
+            failChecksCountTotal: form.apartment
+                .map(room => {
+                    return room.nested
+                        .map(section => (section.nested.reduce((sum, check) => (sum += check.value === false ? 1 : 0), 0)))
+                        .reduce((sum, sectionChecksCount) => {
+                            return sum += sectionChecksCount
+                        }, 0)
+                })
+                .reduce((sum, roomChecksCountInAllSections) => {
+                    return sum += roomChecksCountInAllSections
+                }, 0),
+        }
+        formData.append('form', JSON.stringify(form));
+        formData.append('summary', JSON.stringify(summary));
         const apiURL = 'https://priemka-pro.ru/api/v2/?method=setform&token=' + form.token;
         setIsLoading(true);
-        axios.post( 
+        axios.post(
             apiURL,
             formData,
-            { headers: { 'Content-Type': 'multipart/form-data'} }
+            { headers: { 'Content-Type': 'multipart/form-data' } }
         ).then(response => {
             AsyncStorage.setItem(`form_${form.id}`, JSON.stringify(summary));
             updateStoredForms();
             setIsLoading(false);
         })
-        .catch( err => {
-            console.log('SendForm failed: ' + err);
-        });
+            .catch(err => {
+                console.log('SendForm failed: ' + err);
+            });
     }
 
     const getFailChecks = ( form ) => {
