@@ -23,7 +23,6 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 import { init, track } from '@amplitude/analytics-react-native';
-init('c8698f1fccc72a1744388b9e1341b833', 'stumarkin@mail.ru');
 
 
 const getDeviceId = async () => {
@@ -48,8 +47,8 @@ export default function ServicesScreen ({navigation}) {
         getDeviceId()
         .then(deviceId =>{ 
             setDeviceId(deviceId)
-            track('ServicesScreen', { deviceId }); 
-              
+            init('c8698f1fccc72a1744388b9e1341b833', deviceId);
+            track('ServicesScreen-View'); 
         } )
         
         // Banner loading
@@ -74,7 +73,7 @@ export default function ServicesScreen ({navigation}) {
     // Banners with sections sorting
     const bannersUI = banners.filter( ({section}) => !bannerSection || section==bannerSection ).map( (banner, i) => (
         <BannerView {...banner} i  onPress={() =>{
-            track('BannerPress', { deviceId, banner: banner.header });
+            track('ServicesScreen-Banner-Press', { banner: banner.header });
             navigation.navigate('Webview', {title: '', deviceid: deviceId, callback: ()=>{setCounter(counter+1)}, url: banner.webviewUrl + (banner.webviewUrl.indexOf('?')>-1 ? '&' : '?') + 'deviceid=' + deviceId })
          }}/>
     ));
@@ -100,6 +99,7 @@ export default function ServicesScreen ({navigation}) {
 
             }}
             onPress={ ()=>{
+                track('ServicesScreen-Chips-Press', { chips: section });
                 setBannerSection( bannerSection!=section ? section : null )
             }}
         >

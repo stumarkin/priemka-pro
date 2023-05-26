@@ -18,7 +18,6 @@ import * as SecureStore from 'expo-secure-store';
 
 
 import { init, track } from '@amplitude/analytics-react-native';
-init('c8698f1fccc72a1744388b9e1341b833', 'stumarkin@mail.ru');
 
 const getDeviceId = async () => {
     let deviceId = await SecureStore.getItemAsync('deviceId');
@@ -44,7 +43,8 @@ export default function RefundCalculationScreen ({navigation, route}) {
         getDeviceId()
         .then(deviceId =>{ 
             setDeviceId(deviceId)
-            track('RefundScreen', { deviceId }); 
+            init('c8698f1fccc72a1744388b9e1341b833', deviceId);
+            track('RefundCalculationScreen-View'); 
         } )
     }, []);  
 
@@ -100,6 +100,7 @@ export default function RefundCalculationScreen ({navigation, route}) {
                         }
                         actionControls={
                             <>
+                                <Divider width={10} style={{ opacity: 0 }} />
                                 <TextInput
                                     style={{
                                         height: 40,
@@ -143,7 +144,7 @@ export default function RefundCalculationScreen ({navigation, route}) {
                                     disabled={isLoading}
                                     onPress={() =>{
                                         if ( username!='' && + userphone > 1000000000){
-                                            track('RequestRefundPressed', { deviceId });
+                                            track('RefundCalculationScreen-RequestRefund-Press', { square, refund });
                                             sendRequestRefundForm();
                                             // navigation.navigate('RefundCalculation', {title: '', square, designTypes, designTypeSelected});
                                         } else {

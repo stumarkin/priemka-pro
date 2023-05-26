@@ -23,6 +23,9 @@ import {
 } from '@rneui/themed';
 import { theme } from './theme';
 import axios from 'axios';
+import { init, track } from '@amplitude/analytics-react-native';
+
+
 
 const rand5digits = () => (Math.floor(Math.random()*100000));
 
@@ -62,11 +65,16 @@ const inclineWord = ( howMany, ofWhat, humanicStyle = false ) => {
   }
 }
 
+const getDeviceId = async () => {
+  let deviceId = await SecureStore.getItemAsync('deviceId');
+  if (!deviceId) {
+      deviceId = generateId(19);
+      await SecureStore.setItemAsync('deviceId', deviceId);
+  }
+  return deviceId;
+}
+
 export default function ApartmentScreen ({navigation, route}) {
-
-   
-
-
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [form, setForm] = useState({});
@@ -137,8 +145,14 @@ export default function ApartmentScreen ({navigation, route}) {
 
     // Initial loading
     useEffect(() => {
-      axios.get(`https://priemka-pro.ru/api/v2/?method=getdictionary`)
+      getDeviceId()
+      .then(deviceId =>{ 
+          setDeviceId(deviceId)
+          init('c8698f1fccc72a1744388b9e1341b833', deviceId);
+          track('ApartmentScreen-View'); 
+      } )
 
+      axios.get(`https://priemka-pro.ru/api/v2/?method=getdictionary`)
       .then(res => {
         const dictionary = res.data ;
         setDictionary( dictionary );
@@ -336,9 +350,10 @@ export default function ApartmentScreen ({navigation, route}) {
           
           
           <Button 
-            onPress={
-              onShare
-            }
+            onPress={ () => {
+              track('ApartmentScreen-Share-Press', { failChecksCountTotal });
+              onShare()
+            }}
             disabled={failChecksCountTotal==0}
             buttonStyle={{backgroundColor: '#7E33B8'}}
           >
@@ -351,6 +366,7 @@ export default function ApartmentScreen ({navigation, route}) {
               <View>
                 <Button 
                   onPress={() =>{
+                    track('ApartmentScreen-Blank-Press', { failChecksCountTotal });
                     navigation.navigate('Webview', {title: 'Акт осмотра', url: `https://priemka-pro.ru/r/${form.id}`, isSharable: true})
                   }}
                   disabled={failChecksCountTotal==0}
@@ -379,7 +395,11 @@ export default function ApartmentScreen ({navigation, route}) {
 
           <Button 
             disabled={isOverdue}
-            onPress={toggleRoomsDialogIsVisible}
+            onPress={()=>{
+              track('ApartmentScreen-AddRoom-Press');
+              toggleRoomsDialogIsVisible()
+            }
+            }
           >
               <Icon type='ionicon' name="add-circle-outline" color="white" /> Добавить комнату
           </Button>
@@ -409,6 +429,7 @@ export default function ApartmentScreen ({navigation, route}) {
                 <Dialog.Button
                   title="Добавить"
                   onPress={() => {
+                      track('ApartmentScreen-AddRoom-DialogRoomChoise-Press', { checkedRoomId });
                       setForm( addRoom(checkedRoomId, form, dictionary) );
                       sendForm(); 
                       toggleRoomsDialogIsVisible();

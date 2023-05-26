@@ -22,7 +22,6 @@ import * as SecureStore from 'expo-secure-store';
 
 
 import { init, track } from '@amplitude/analytics-react-native';
-init('c8698f1fccc72a1744388b9e1341b833', 'stumarkin@mail.ru');
 
 
 
@@ -53,7 +52,8 @@ export default function RefundScreen ({navigation}) {
         getDeviceId()
         .then(deviceId =>{ 
             setDeviceId(deviceId)
-            track('RefundScreenView', { deviceId }); 
+            init('c8698f1fccc72a1744388b9e1341b833', deviceId);
+            track('RefundScreen-View'); 
         } )
     }, []);  
 
@@ -129,7 +129,7 @@ export default function RefundScreen ({navigation}) {
                             title='Расcчитать' 
                             onPress={() =>{
                                 if ( square!='' ){
-                                    track('CalculateRefundPress', { deviceId });
+                                    track('RefundScreen-CalculateRefund-Press', { square, designTypeSelected });
                                     navigation.navigate('RefundCalculation', {title: '', square, designTypes, designTypeSelected});
                                 } else {
                                     alert('Укажите площадь вашей квартиры для расчета суммы возмещения.')

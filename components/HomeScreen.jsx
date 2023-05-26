@@ -23,7 +23,6 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 import { init, track } from '@amplitude/analytics-react-native';
-init('c8698f1fccc72a1744388b9e1341b833', 'stumarkin@mail.ru');
 
 
 const inclineWord = ( howMany, ofWhat, humanicStyle = false ) => {
@@ -116,7 +115,8 @@ export default function HomeScreen ({navigation}) {
         getDeviceId()
         .then(deviceId =>{ 
             setDeviceId(deviceId)
-            track('HomeScreenView', { deviceId });
+            init('c8698f1fccc72a1744388b9e1341b833', deviceId);
+            track('HomeScreen-View');
               
         } )
         
@@ -155,7 +155,7 @@ export default function HomeScreen ({navigation}) {
     const bannerSections = banners.map(({section})=>(section)).filter( (item, i, arr) => arr.indexOf(item) === i );
     bannerSections.forEach( section_ => {bannersUI[section_] = banners.filter( ({section}) => section == section_ ).map( (banner, i) => (
         <BannerView {...banner} i  onPress={() =>{
-            track('BannerPress', { deviceId, banner: banner.header }); 
+            track('HomeScreen-Banner-Press', {banner: banner.header }); 
             navigation.navigate('Webview', {title: '', deviceid: deviceId, callback: ()=>{setCounter(counter+1)}, url: banner.webviewUrl + (banner.webviewUrl.indexOf('?')>-1 ? '&' : '?') + 'deviceid=' + deviceId })
          }}/>
     ))} )
@@ -209,7 +209,7 @@ export default function HomeScreen ({navigation}) {
                                             title='Новая приёмка' 
                                             onPress={() =>{
                                                 if ( isPro || storedForms.length<5 ){
-                                                track('NewAcceptancePress', { deviceId });
+                                                    track('HomeScreen-NewAcceptance-Press' );
                                                     navigation.navigate('Apartment', {updateStoredForms: updateStoredForms});
                                                 } else {
                                                     Alert.alert('Время переходить на Pro 🚀', 'Бесплатный тариф ограничен приёмкой 5 квартир.\nПереходите на Pro, в нем нет ограничений.')
@@ -231,7 +231,7 @@ export default function HomeScreen ({navigation}) {
                                             key={key} 
                                             containerStyle={{paddingHorizontal: 0}}
                                             onPress={ () =>{ 
-                                                track('PreviousAcceptancePress', { deviceId });
+                                                track('HomeScreen-PrevAcceptance-Press');
                                                 navigation.navigate('Apartment', {formId: key.split('_')[1], updateStoredForms, isPro}) 
                                             }}
                                         >

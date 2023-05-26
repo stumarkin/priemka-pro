@@ -20,6 +20,16 @@ import {
 } from '@rneui/themed';
 import { theme } from './theme';
 import * as Haptics from 'expo-haptics';
+import { init, track } from '@amplitude/analytics-react-native';
+
+const getDeviceId = async () => {
+    let deviceId = await SecureStore.getItemAsync('deviceId');
+    if (!deviceId) {
+        deviceId = generateId(19);
+        await SecureStore.setItemAsync('deviceId', deviceId);
+    }
+    return deviceId;
+}
 
 
 const rand5digits = () => (Math.floor(Math.random()*100000));
@@ -134,9 +144,18 @@ export default function RoomScreen ({navigation, route}) {
         setCheckDetailsDialogIsVisible(!checkDetailsDialogIsVisible);
     }
     
+    // Initial
+    useEffect(() => {
+        getDeviceId()
+        .then(deviceId =>{ 
+            setDeviceId(deviceId)
+            init('c8698f1fccc72a1744388b9e1341b833', deviceId);
+        } )
+    }, []); 
 
     // Configure navbar title and button
     useEffect(() => {
+        track('RoomScreen-View'); 
         navigation.setOptions({
             title: room.name,
             headerRight: () => (
@@ -254,7 +273,10 @@ export default function RoomScreen ({navigation, route}) {
             <Divider width={10} style={{ opacity: 0 }} />
             <Button 
                 disabled={isOverdue}
-                onPress={toggleRoomsDialogIsVisible}
+                onPress={()=>{
+                    track('RoomScreen-AddChecks-Press');
+                    toggleRoomsDialogIsVisible()
+                }}
             >
                 <Icon type='ionicon' name="add-circle-outline" color="white" /> Добавить проверки
             </Button>
@@ -285,6 +307,7 @@ export default function RoomScreen ({navigation, route}) {
                     <Dialog.Button
                     title="Добавить"
                     onPress={() => {
+                        track('RoomScreen-AddChecks-DialogChecksChoise-Press', { checkedSectionId });
                         room = addSection(checkedSectionId, form, room);
                         sendForm(form); 
                         toggleRoomsDialogIsVisible();
