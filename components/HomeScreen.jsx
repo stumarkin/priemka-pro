@@ -212,7 +212,7 @@ export default function HomeScreen ({navigation}) {
                                                 track('NewAcceptancePress', { deviceId });
                                                     navigation.navigate('Apartment', {updateStoredForms: updateStoredForms});
                                                 } else {
-                                                    Alert.alert('Время переходить на Pro 🚀', 'Бесплатный тариф ограничен приёмками пятью квартир. Переходите на Pro, в нем нет ограничений!')
+                                                    Alert.alert('Время переходить на Pro 🚀', 'Бесплатный тариф ограничен приёмкой 5 квартир.\nПереходите на Pro, в нем нет ограничений.')
                                                 }
                                             }}
                                         />
@@ -236,7 +236,7 @@ export default function HomeScreen ({navigation}) {
                                             }}
                                         >
                                             <ListItem.Content>
-                                                <ListItem.Title style={{fontWeight: 700}}>{value.address ? value.address : 'Без адреса'}</ListItem.Title>
+                                                <ListItem.Title style={{fontWeight: 600}}>{value.address ? value.address : 'Без адреса'}</ListItem.Title>
                                                 <ListItem.Subtitle style={{fontSize: 14}}>{inclineWord(value.checksCountTotal, "проверка")}, {inclineWord(value.failChecksCountTotal, "недостаток", true)}</ListItem.Subtitle>
                                             </ListItem.Content>
                                             <ListItem.Chevron />

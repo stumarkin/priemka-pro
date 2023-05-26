@@ -170,6 +170,34 @@ export default function ApartmentScreen ({navigation, route}) {
         let formData = new FormData();
         console.log( `Sending: ${form.id}` );
         formData.append('form', JSON.stringify( form ) );
+        const summary = {
+          address: form.address,
+          checksCountTotal: form.apartment
+                            .map( room => { 
+                              return room.nested
+                                          .map( section => (section.nested.reduce( (sum, check) => (sum += 1), 0)) )
+                                          .reduce( (sum, sectionChecksCount) => {
+                                            return sum += sectionChecksCount
+                                          }, 0 ) 
+                            })
+                            .reduce( (sum, roomChecksCountInAllSections) => { 
+                              return sum += roomChecksCountInAllSections
+                            }, 0 ),
+          failChecksCountTotal: form.apartment
+                        .map( room => { 
+                          return room.nested
+                                      .map( section => (section.nested.reduce( (sum, check) => (sum += check.value===false ? 1 : 0), 0)) )
+                                      .reduce( (sum, sectionChecksCount) => {
+                                        return sum += sectionChecksCount
+                                      }, 0 ) 
+                        })
+                        .reduce( (sum, roomChecksCountInAllSections) => { 
+                          return sum += roomChecksCountInAllSections
+                        }, 0 ),
+        } 
+
+
+        formData.append('summary', JSON.stringify( summary ) );
         const apiURL = 'https://priemka-pro.ru/api/v2/?method=setform&token=' + form.token;
         setIsLoading(true);
         axios.post( 
@@ -177,31 +205,7 @@ export default function ApartmentScreen ({navigation, route}) {
             formData,
             { headers: { 'Content-Type': 'multipart/form-data'} }
         ).then(response => {
-            AsyncStorage.setItem(`form_${form.id}`, JSON.stringify({
-              address: form.address,
-              checksCountTotal: form.apartment
-                                .map( room => { 
-                                  return room.nested
-                                              .map( section => (section.nested.reduce( (sum, check) => (sum += 1), 0)) )
-                                              .reduce( (sum, sectionChecksCount) => {
-                                                return sum += sectionChecksCount
-                                              }, 0 ) 
-                                })
-                                .reduce( (sum, roomChecksCountInAllSections) => { 
-                                  return sum += roomChecksCountInAllSections
-                                }, 0 ),
-                failChecksCountTotal: form.apartment
-                                      .map( room => { 
-                                        return room.nested
-                                                    .map( section => (section.nested.reduce( (sum, check) => (sum += check.value===false ? 1 : 0), 0)) )
-                                                    .reduce( (sum, sectionChecksCount) => {
-                                                      return sum += sectionChecksCount
-                                                    }, 0 ) 
-                                      })
-                                      .reduce( (sum, roomChecksCountInAllSections) => { 
-                                        return sum += roomChecksCountInAllSections
-                                      }, 0 ),
-            }));
+            AsyncStorage.setItem(`form_${form.id}`, JSON.stringify(summary));
             updateStoredForms();
             setIsLoading(false);
         })
@@ -234,8 +238,8 @@ export default function ApartmentScreen ({navigation, route}) {
 
     const [address, setAddress] = useState('');
     const onEndEditingAddress = () => {
-      if (address.length > 0){
-        form.address = address; 
+      if (address.trim().length > 0){
+        form.address = address.trim(); 
         sendForm()
       }
     }
