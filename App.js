@@ -1,6 +1,7 @@
 import HomeScreen from './components/HomeScreen';
 import ApartmentScreen from './components/ApartmentScreen';
 import RoomScreen from './components/RoomScreen';
+import FailChecksListScreen from './components/FailChecksListScreen';
 import ServicesScreen from './components/ServicesScreen';
 import RefundScreen from './components/RefundScreen';
 import RefundCalculationScreen from './components/RefundCalculationScreen';
@@ -97,6 +98,13 @@ export default function App() {
       <Stack.Screen 
         name="Room" 
         component={RoomScreen}
+        options={({ route }) => ({ 
+          title: route.params.title, 
+        })}
+      />
+      <Stack.Screen 
+        name="FailChecksList" 
+        component={FailChecksListScreen}
         options={({ route }) => ({ 
           title: route.params.title, 
         })}

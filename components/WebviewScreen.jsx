@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { 
     StyleSheet, 
-    Pressable,
-    Platform,
     Share
 } from 'react-native';
 import { 
-    Icon,
+    Icon, Button
 } from '@rneui/themed';
 import { theme } from './theme';
 import { WebView } from 'react-native-webview';
@@ -49,9 +47,13 @@ export default function WebviewScreen ({navigation, route}) {
         if (route.params.isSharable){
             navigation.setOptions({
               headerRight: () => (
-                <Pressable onPress={onShare} >
-                    <Icon type='ionicon' name={Platform.OS=='ios' ? "share-outline" : "share-social"} color="blue" />
-                </Pressable>
+                <Button 
+                  onPress={onShare}
+                  title={'Отправить'}
+                  type="clear" 
+                  color="primary"
+                  titleStyle={{ fontSize: 17}}
+              />
               ),
             });
         }

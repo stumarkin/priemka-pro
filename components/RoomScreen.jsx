@@ -70,12 +70,19 @@ export default function RoomScreen ({navigation, route}) {
     const dictionary = route.params.dictionary;
     const isOverdue = route.params.isOverdue;
     let room = route.params.room;
+    const [comment, setComment] = useState(room.comment);
     const form = route.params.form;
-    const sendForm = (form) => route.params.sendForm(form);
+    const sendForm = () => route.params.sendForm();
     const [forceUpdateCounter, setForceUpdateCounter] = useState(0);
+
     
     const forceUpdate = () => {
         setForceUpdateCounter(forceUpdateCounter+1);
+    }
+
+    const onEndEditingComment = () => {
+        room.comment = comment.trim().replace(/\n/g, "\\n");
+        sendForm()
     }
 
     // Dialog
@@ -103,7 +110,7 @@ export default function RoomScreen ({navigation, route}) {
     };
     const onEndRoomEdit = () => {
         room.name = editRoomName;
-        sendForm(form); 
+        sendForm(); 
         forceUpdate();
       }
     
@@ -117,12 +124,12 @@ export default function RoomScreen ({navigation, route}) {
     };
     const onEndSectionEdit = () => {
         editSection.name = editSectionName;
-        sendForm(form); 
+        sendForm(); 
         forceUpdate();
     }
     const deleteSection = (section) => {
         room.nested = room.nested.filter( ({id}) => (id!=section.id) );
-        sendForm(form); 
+        sendForm(); 
         forceUpdate();
     }
     
@@ -134,7 +141,7 @@ export default function RoomScreen ({navigation, route}) {
     };
     const deleteRoom = (room) => {
         form.apartment = form.apartment.filter( ({id}) => (id!=room.id) );
-        sendForm(form); 
+        sendForm(); 
         forceUpdate();
     }
     
@@ -186,6 +193,7 @@ export default function RoomScreen ({navigation, route}) {
         const sectionChecks = section.nested.map( check => {
             return (
                 <ListItem 
+                    key={check.id}
                     onPress={ () => {
                         setCheckDetails(check)
                         toggleCheckDetailsDialogIsVisible()
@@ -201,14 +209,14 @@ export default function RoomScreen ({navigation, route}) {
                         !isOverdue ? (
                             <Switch
                                 value={!check.value}
-                                onValueChange={ ()=>{
+                                onValueChange={() => {
                                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
                                     check.value = !check.value;
-                                    sendForm(form); 
+                                    sendForm();
                                     forceUpdate();
-                                } }
+                                }}
                                 color="#900603"
-                                />
+                            />
                         ) : null
                     }
                     
@@ -221,6 +229,7 @@ export default function RoomScreen ({navigation, route}) {
         return (
             <>
                 <ListItem.Accordion
+                    key={section.id}
                     content={
                         <>
                             <ListItem.Content>
@@ -258,33 +267,51 @@ export default function RoomScreen ({navigation, route}) {
 
 
     return (
-      <ScrollView style={{ paddingTop: 20, paddingLeft: 20, paddingBottom: 50, paddingRight: 20}}>
+      <ScrollView style={{ paddingTop: 10, paddingLeft: 20, paddingBottom: 50, paddingRight: 20}}>
         <ThemeProvider theme={theme} >
 
             {
                 isOverdue > 0 ? (
                     <BannerView 
+                        key="overdue"
                         backgroundColor={theme.lightColors.warning}
                         text="Эту приёмку больше нельзя менять, т.к. прошло более cуток с ее начала. Вы по прежнему можете получить отчёт по ней. На Pro тарифе этого ограничения нет."
                     />
-                ) : null
+                ) : (
+                    <View key="add">
+                        <Button 
+                            type="clear" 
+                            onPress={()=>{
+                                track('RoomScreen-AddChecks-Press');
+                                toggleRoomsDialogIsVisible()
+                            }}
+                        >
+                            <Icon type='ionicon' name="add-circle-outline" color={theme.lightColors.primary} /> Добавить проверки
+                        </Button>
+                        <Divider width={10} style={{ opacity: 0 }} />
+                    </View>
+                )
             }
 
             { roomSections }
+
+            <TextInput
+                key="comment"
+                multiline={true}
+                numberOfLines={4}
+                placeholder="Добавьте замечания в свободной форме"
+                maxLength={1000}
+                onChangeText={(text)=>setComment(text.replace(/\n/g, "<br>"))}
+                onEndEditing={onEndEditingComment}
+                value={comment.replace(/<br>/g, "\n")}
+                style={{padding: 15, height: 150, backgroundColor: 'white', borderWidth: 1, borderColor: theme.lightColors.grey4, fontSize: 18}}
+            />
             
-            <Divider width={10} style={{ opacity: 0 }} />
-            <Button 
-                disabled={isOverdue}
-                onPress={()=>{
-                    track('RoomScreen-AddChecks-Press');
-                    toggleRoomsDialogIsVisible()
-                }}
-            >
-                <Icon type='ionicon' name="add-circle-outline" color="white" /> Добавить проверки
-            </Button>
-            <Divider width={40} style={{ opacity: 0 }} />
+            
+            <Divider key="d1" width={350} style={{ opacity: 0 }} />
             
             <Dialog
+                key='addChecks'
                 isVisible={roomsDialogIsVisible}
                 onBackdropPress={toggleRoomsDialogIsVisible}
                 >
@@ -311,7 +338,7 @@ export default function RoomScreen ({navigation, route}) {
                     onPress={() => {
                         track('RoomScreen-AddChecks-DialogChecksChoise-Press', { checkedSectionId });
                         room = addSection(checkedSectionId, form, room);
-                        sendForm(form); 
+                        sendForm(); 
                         toggleRoomsDialogIsVisible();
                     }}
                     />
@@ -320,6 +347,7 @@ export default function RoomScreen ({navigation, route}) {
             </Dialog>
 
             <Dialog
+                key='editRoom'
                 isVisible={roomEditDialogIsVisible}
                 onBackdropPress={toggleRoomEditDialogIsVisible}
             >
@@ -357,6 +385,7 @@ export default function RoomScreen ({navigation, route}) {
             
             
             <Dialog
+                key='editSection'
                 isVisible={sectionEditDialogIsVisible}
                 onBackdropPress={toggleSectionEditDialogIsVisible}
             >
@@ -394,6 +423,7 @@ export default function RoomScreen ({navigation, route}) {
 
 
             <Dialog
+                key='confirmDelete'
                 isVisible={roomDeleteDialogIsVisible}
                 onBackdropPress={toggleRoomDeleteDialogIsVisible}
             >
@@ -419,6 +449,7 @@ export default function RoomScreen ({navigation, route}) {
 
 
             <Dialog
+                key='checkDetail'
                 isVisible={checkDetailsDialogIsVisible}
                 onBackdropPress={toggleCheckDetailsDialogIsVisible}
             >
@@ -427,7 +458,7 @@ export default function RoomScreen ({navigation, route}) {
                 <Divider/>
                 {
                     !isOverdue ? (
-                        <ListItem>
+                        <ListItem key="checkD">
                             <ListItem.Content>
                                 <ListItem.Title>Есть недостаток</ListItem.Title>
                             </ListItem.Content>
@@ -435,7 +466,7 @@ export default function RoomScreen ({navigation, route}) {
                                 value={!checkDetails.value}
                                 onValueChange={ ()=>{
                                     checkDetails.value = !checkDetails.value;
-                                    sendForm(form); 
+                                    sendForm(); 
                                     forceUpdate();
                                 } }
                                 color="#900603"

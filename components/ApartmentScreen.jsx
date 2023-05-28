@@ -85,12 +85,6 @@ export default function ApartmentScreen ({navigation, route}) {
     const [dictionary, setDictionary] = useState({});
     const isPro = route.params.isPro;
     const updateStoredForms = () => route.params.updateStoredForms();
-
-    
-    // const [forceUpdateCounter, setForceUpdateCounter] = useState(0);
-    // function forceUpdate () {
-    //   setForceUpdateCounter( Math.random() );
-    // }
     
     // Dialog Add Room
     const [checkedRoomId, setCheckedRoomId] = useState();
@@ -223,9 +217,9 @@ export default function ApartmentScreen ({navigation, route}) {
             updateStoredForms();
             setIsLoading(false);
         })
-            .catch(err => {
-                console.log('SendForm failed: ' + err);
-            });
+        .catch(err => {
+            console.log('SendForm failed: ' + err);
+        });
     }
 
     const getFailChecks = ( form ) => {
@@ -235,10 +229,10 @@ export default function ApartmentScreen ({navigation, route}) {
             ...room, 
             sections: room.nested.reduce( (sections, section ) => {
                         const checks = section.nested.reduce( (checks, check) => {
-                          return checks += (!check.value ? `- ${getName(check)}\n` : '')
+                          return checks += (!check.value ? ` - ${getName(check)}\n` : '')
                         }, '' )
-                        return sections += (checks!='' ? `${getName(section)}\n${checks}\n` : '')
-                      }, '') 
+                        return sections += (checks!='' ? `${getName(section)}:\n${checks}` : '')
+                      }, '') +  (room.comment.length>0 ? `Другое:\n - ${room.comment.replace(/<br>/g, "\n - ") }\n` : '' )
           }
         ))
         .reduce( (sum, room) => ( sum += (room.sections!='' ? `${room.name.toUpperCase()}\n${room.sections}\n` : '') ), '' ) 
@@ -258,7 +252,7 @@ export default function ApartmentScreen ({navigation, route}) {
       }
     }
   
-    // S
+    // Skeletons
     if (isInitialLoading){
       return (
         <View style={{ padding: 20 }}>
@@ -348,38 +342,41 @@ export default function ApartmentScreen ({navigation, route}) {
           <Divider width={10} style={{ opacity: 0 }} />
           
           
-          
-          <Button 
-            onPress={ () => {
-              track('ApartmentScreen-Share-Press', { failChecksCountTotal });
-              onShare()
-            }}
-            disabled={failChecksCountTotal==0}
-            buttonStyle={{backgroundColor: '#7E33B8'}}
-          >
-            {failChecksCountTotal == 0 ? 'Пока недостатков нет' : `Отправить список из ${inclineWord(failChecksCountTotal, "недостатка")}`}
-          </Button>
-          <Divider width={10} style={{ opacity: 0 }} />
+            <View style={{alignContent: 'space-between', flexDirection: 'row'}}>
+                <View style={{width:'50%'}}>    
+                    <Button
+                        key='list'
+                        onPress={() => {
+                            track('ApartmentScreen-List-Press', { failChecksCountTotal });
+                            navigation.navigate('FailChecksList', { title: 'Список', content: getFailChecks(form)})
+                        }}
+                        disabled={failChecksCountTotal == 0}
+                        buttonStyle={{ marginRight: 5, backgroundColor: '#7E33B8' }}
+                    >
+                        Список
+                    </Button>
+                </View>
+                <View style={{width:'50%'}}>    
+                    <Button
+                        key='blank'
+                        onPress={() => {
+                            track('ApartmentScreen-Blank-Press', { failChecksCountTotal });
+                            navigation.navigate('Webview', { title: 'Акт осмотра', url: `https://priemka-pro.ru/r/${form.id}`, isSharable: true })
+                        }}
+                        disabled={failChecksCountTotal == 0}
+                        buttonStyle={{ marginLeft: 5, borderWidth: 1, borderColor: '#7E33B8' }}
+                        titleStyle={{ color: '#7E33B8' }}
+                        type="outline"
+                    >
+                        Акт осмотра
+                    </Button>
+                </View>
+            </View>
 
-          {
-            failChecksCountTotal > 0 ?
-              <View>
-                <Button 
-                  onPress={() =>{
-                    track('ApartmentScreen-Blank-Press', { failChecksCountTotal });
-                    navigation.navigate('Webview', {title: 'Акт осмотра', url: `https://priemka-pro.ru/r/${form.id}`, isSharable: true})
-                  }}
-                  disabled={failChecksCountTotal==0}
-                  buttonStyle={{borderWidth: 1, borderColor: '#7E33B8' }}
-                  titleStyle={{color: '#7E33B8'}}
-                  type="outline"
-                >
-                  {failChecksCountTotal == 0 ? 'Пока недостатков нет' : `Акт осмотра`}
-                </Button>
-                <Divider width={10} style={{ opacity: 0 }} />
-              </View>
-            : null
-          }
+          <Divider width={10} style={{ opacity: 0 }} />
+        <Text style={{textAlign: 'center'}}>{failChecksCountTotal == 0 ? 'Пока недостатков нет' : 'Всего ' + inclineWord(failChecksCountTotal, "недостаток") }</Text>
+
+
 
           {
             isOverdue > 0 ? (
