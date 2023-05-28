@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Icon } from '@rneui/base'
 import { 
+  Badge,
   ListItem,
   ThemeProvider, 
   Text, 
@@ -135,7 +136,7 @@ export default function ApartmentScreen ({navigation, route}) {
     };
 
     const getName = ( obj ) => {
-      return obj.name ? obj.name : dictionary[ (obj.templateId ? obj.templateId : obj.id) ].name;
+      return obj.name ? obj.name : ( dictionary[ (obj.templateId ? obj.templateId : obj.id) ].tint || dictionary[ (obj.templateId ? obj.templateId : obj.id) ].name );
     }
     
 
@@ -251,6 +252,36 @@ export default function ApartmentScreen ({navigation, route}) {
         sendForm()
       }
     }
+
+    // Dialog Apartment Delete
+    const [apartmentDeleteDialogIsVisible, setApartmentDeleteDialogIsVisible] = useState(false);
+    const toggleApartmentDeleteDialogIsVisible = () => {
+      setApartmentDeleteDialogIsVisible(!apartmentDeleteDialogIsVisible);
+    };
+
+    const deleteApartment = () => {
+        if (form.id) {
+            console.log(form.id);
+            console.log(form.token);
+
+            const apiURL = 'https://priemka-pro.ru/api/v2/?method=deleteform&id=' + form.id + '&token=' + form.token;
+            axios.get( apiURL)
+            .then( res=> {
+                console.log(res.data);
+                if (res.data.result){
+                    AsyncStorage.removeItem(`form_${form.id}`)
+                    updateStoredForms()
+                    navigation.navigate('Home');
+                } else {
+                    console.log('Server deleteApartment failed: ' + res.data);
+                }
+            })
+            .catch(err => {
+                console.log('Server deleteApartment failed: ' + err);
+            });
+        }
+    }
+
   
     // Skeletons
     if (isInitialLoading){
@@ -291,6 +322,8 @@ export default function ApartmentScreen ({navigation, route}) {
           <>
             <ListItem 
               key={room.id}
+              containerStyle={{paddingHorizontal: 0, paddingVertical: 5}}
+
               onPress={
                 () => { navigation.navigate('Room', { 
                   title: room.name,
@@ -305,8 +338,14 @@ export default function ApartmentScreen ({navigation, route}) {
               }
             >
                 <ListItem.Content>
-                    <ListItem.Title h3={true}>{room.name}</ListItem.Title>
-                    <ListItem.Subtitle>{inclineWord(checksCount, "проверка")} и в них {inclineWord(failChecksCount, "недостаток")}</ListItem.Subtitle>
+                    <ListItem.Title style={{fontWeight: 600}}>
+                        {room.name} {failChecksCount ? <Badge value={failChecksCount} status="error"/> : ''} 
+                    </ListItem.Title>
+                    {
+                        checksCount>0 ? (
+                            <ListItem.Subtitle style={{color: 'grey'}}>{inclineWord(checksCount, "проверка")}</ListItem.Subtitle>
+                        ): null
+                    }
                 </ListItem.Content>
                 <ListItem.Chevron />
             </ListItem>
@@ -322,89 +361,108 @@ export default function ApartmentScreen ({navigation, route}) {
       { isLoading ? <Text style={{ backgroundColor: "#FEBE00", textAlign: "center", fontSize: 12, padding: 5 }}>Обновление данных</Text> : null }
       <ScrollView style={{ padding: 20}}>
         <ThemeProvider theme={theme} >
-          
-          <Divider width={10} style={{ opacity: 0 }} />
 
-          <TextInput
-            style={{
-              height: 40,
-              borderBottomColor: theme.lightColors.grey3,
-              borderBottomWidth: 2,
-              fontSize: 19,
-              padding: 0,
-            }}
-            onChangeText={ setAddress }
-            onEndEditing={ onEndEditingAddress }
-            value={address}
-            placeholder="Введите адрес квартиры"
-            autoFocus={address==''}
-          />
-          <Divider width={10} style={{ opacity: 0 }} />
-          
-          
-            <View style={{alignContent: 'space-between', flexDirection: 'row'}}>
-                <View style={{width:'50%'}}>    
-                    <Button
-                        key='list'
-                        onPress={() => {
-                            track('ApartmentScreen-List-Press', { failChecksCountTotal });
-                            navigation.navigate('FailChecksList', { title: 'Список', content: getFailChecks(form)})
+                
+
+                <BannerView 
+                    key="address"
+                    header="Адрес квартиры"
+                    text="Используется в отчете и поможет найти квартиру среди других приёмок"
+                    actionControls={
+                        <TextInput
+                        style={{
+                          height: 40,
+                          borderBottomColor: theme.lightColors.grey3,
+                          borderBottomWidth: 2,
+                          fontSize: 19,
+                          padding: 0,
                         }}
-                        disabled={failChecksCountTotal == 0}
-                        buttonStyle={{ marginRight: 5, backgroundColor: '#7E33B8' }}
-                    >
-                        Список
-                    </Button>
-                </View>
-                <View style={{width:'50%'}}>    
-                    <Button
-                        key='blank'
-                        onPress={() => {
-                            track('ApartmentScreen-Blank-Press', { failChecksCountTotal });
-                            navigation.navigate('Webview', { title: 'Акт осмотра', url: `https://priemka-pro.ru/r/${form.id}`, isSharable: true })
-                        }}
-                        disabled={failChecksCountTotal == 0}
-                        buttonStyle={{ marginLeft: 5, borderWidth: 1, borderColor: '#7E33B8' }}
-                        titleStyle={{ color: '#7E33B8' }}
-                        type="outline"
-                    >
-                        Акт осмотра
-                    </Button>
-                </View>
-            </View>
+                        onChangeText={ setAddress }
+                        onEndEditing={ onEndEditingAddress }
+                        value={address}
+                        placeholder="Введите адрес"
+                        autoFocus={address==''}
+                      />
+                    }
+                />
+            
+                <BannerView 
+                    key="rooms"
+                    header="Комнаты и проверки"
+                    actionControls={
+                        <>
+                            { apartmentRoomsUI }
+                            <Button 
+                                disabled={isOverdue}
+                                onPress={()=>{
+                                    track('ApartmentScreen-AddRoom-Press');
+                                    toggleRoomsDialogIsVisible()
+                                }}
+                            >
+                                <Icon type='ionicon' name="add-circle-outline" color='white' /> Добавить комнату
+                            </Button>
+                        </>
+                        
+                    }
+                />
 
+                <BannerView 
+                    key="report"
+                    header="Отчет"
+                    text={`Всего ${inclineWord(checksCountTotal, "проверка")} и в них ${inclineWord(failChecksCountTotal, "недостаток", true)}`}
+                    actionControls={
+                            <View style={{alignContent: 'space-between', flexDirection: 'row'}}>
+                                <View style={{width:'50%'}}>    
+                                    <Button
+                                        key='list'
+                                        onPress={() => {
+                                            track('ApartmentScreen-List-Press', { failChecksCountTotal });
+                                            navigation.navigate('FailChecksList', { title: 'Список', content: getFailChecks(form)})
+                                        }}
+                                        disabled={failChecksCountTotal == 0}
+                                        buttonStyle={{ marginRight: 5, backgroundColor: '#7E33B8' }}
+                                    >
+                                        Список
+                                    </Button>
+                                </View>
+                                <View style={{width:'50%'}}>    
+                                    <Button
+                                        key='blank'
+                                        onPress={() => {
+                                            track('ApartmentScreen-Blank-Press', { failChecksCountTotal });
+                                            navigation.navigate('Webview', { title: 'Акт осмотра', url: `https://priemka-pro.ru/r/${form.id}`, isSharable: true })
+                                        }}
+                                        disabled={failChecksCountTotal == 0}
+                                        buttonStyle={{ marginLeft: 5, borderWidth: 1, borderColor: '#7E33B8' }}
+                                        titleStyle={{ color: '#7E33B8' }}
+                                        type="outline"
+                                    >
+                                        Акт осмотра
+                                    </Button>
+                                </View>
+                            </View>
+                    }
+                />
+
+          
           <Divider width={10} style={{ opacity: 0 }} />
-        <Text style={{textAlign: 'center'}}>{failChecksCountTotal == 0 ? 'Пока недостатков нет' : 'Всего ' + inclineWord(failChecksCountTotal, "недостаток") }</Text>
-
-
 
           {
-            isOverdue > 0 ? (
-              <BannerView 
-                backgroundColor={theme.lightColors.warning}
-                text="Эту приёмку больше нельзя менять, т.к. прошло более cуток с ее начала. Вы по прежнему можете получить отчёт по ней. На Pro тарифе этого ограничения нет."
-            />
+            route.params.formId && isPro ? (
+                <Button 
+                      title="Удалить квартиру"
+                      type="clear"
+                      titleStyle={{ color: "red"}}
+                      onPress={toggleApartmentDeleteDialogIsVisible}
+                  />
             ) : null
           }
+          
+          <Divider width={10} style={{ opacity: 0 }} />
          
-          <Divider width={10} style={{ opacity: 0 }} />
-          { apartmentRoomsUI }
+          <Text style={{textAlign: 'center', fontSize: 12, color: 'lightgrey'}}>{form.id}</Text>
 
-          <Button 
-            disabled={isOverdue}
-            onPress={()=>{
-              track('ApartmentScreen-AddRoom-Press');
-              toggleRoomsDialogIsVisible()
-            }
-            }
-          >
-              <Icon type='ionicon' name="add-circle-outline" color="white" /> Добавить комнату
-          </Button>
-          <Divider width={10} style={{ opacity: 0 }} />
-          <Text style={{fontSize:14, textAlign: 'center'}}>{`Всего ${inclineWord(checksCountTotal, "проверка")}\nи в них ${inclineWord(failChecksCountTotal, "недостаток", true)}`}</Text>
-          <Divider width={10} style={{ opacity: 0 }} />
-          <Text style={{textAlign: 'center', fontSize: 12}}>{form.id}</Text>
-          <Divider width={10} style={{ opacity: 0 }} />
+          <Divider width={20} style={{ opacity: 0 }} />
 
           <Dialog
             isVisible={roomsDialogIsVisible}
@@ -435,6 +493,33 @@ export default function ApartmentScreen ({navigation, route}) {
                 <Dialog.Button title="Отмена" onPress={toggleRoomsDialogIsVisible} />
             </Dialog.Actions>
           </Dialog>
+
+          <Dialog
+                key='confirmDelete'
+                isVisible={apartmentDeleteDialogIsVisible}
+                onBackdropPress={toggleApartmentDeleteDialogIsVisible}
+            >
+                <Dialog.Title title="Точно удалить?"/>
+                <Text>
+                    Удалить квартиру и все выбранные для неё проверки и выявленные недостатки? Данное действие необратимо.
+                </Text>
+                <Dialog.Actions>
+                    <Dialog.Button
+                        title="Отменить"
+                        onPress={toggleApartmentDeleteDialogIsVisible}
+                    />
+                    <Dialog.Button 
+                        titleStyle={{color: "red"}}
+                        title="Да, удалить" 
+                        onPress={()=>{
+                            deleteApartment(form)
+                            alert('Квартира удалена успешно.')
+                            updateStoredForms()
+                            navigation.navigate('Home')
+                        }} 
+                    />
+                </Dialog.Actions>
+            </Dialog>
             
         </ThemeProvider>
       </ScrollView>
