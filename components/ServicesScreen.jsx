@@ -6,8 +6,7 @@ import {
     Alert,
     View, 
     ScrollView, 
-    Pressable, 
-    ImageBackground
+    Linking
 } from 'react-native';
 import { 
     ThemeProvider, 
@@ -54,8 +53,8 @@ export default function ServicesScreen ({navigation}) {
         // Banner loading
         axios.get(`https://priemka-pro.ru/api/v2/?method=getservicesbanners`)
         .then(res => {
-            if (typeof res.data == 'object'){
-                setBanners( res.data );
+            if (res.data.result === true ){
+                setBanners( res.data.banners );
             } else {
                 console.log( 'Banner load fail. API response:\n' + res.data ) 
             }
@@ -71,12 +70,17 @@ export default function ServicesScreen ({navigation}) {
 
 
     // Banners with sections sorting
-    const bannersUI = banners.filter( ({section}) => !bannerSection || section==bannerSection ).map( (banner, i) => (
-        <BannerView {...banner} i  onPress={() =>{
+    const bannersUI = banners.filter( ({section}) => !bannerSection || section==bannerSection ).map( (banner, i) => 
+        {console.log( banner )
+        return <BannerView {...banner} i  onPress={() =>{
             track('ServicesScreen-Banner-Press', { banner: banner.header });
-            navigation.navigate('Webview', {title: '', deviceid: deviceId, callback: ()=>{setCounter(counter+1)}, url: banner.webviewUrl + (banner.webviewUrl.indexOf('?')>-1 ? '&' : '?') + 'deviceid=' + deviceId })
-         }}/>
-    ));
+            if (banner.outerUrl){
+                Linking.openURL(banner.outerUrl)
+            } else {
+                navigation.navigate('Webview', {title: '', deviceid: deviceId, callback: ()=>{setCounter(counter+1)}, url: 'https://priemka-pro.ru/webview/services/index.php?id=' + banner.id + '&deviceid=' + deviceId })
+            }
+         }}/>}
+    );
     const bannerSections = banners?.map(({section})=>(section)).filter( (item, i, arr) => arr.indexOf(item) === i );
 
     const bannersSectionsUI = bannerSections.map( (section, i) => (

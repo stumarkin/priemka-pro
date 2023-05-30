@@ -267,16 +267,16 @@ export default function RoomScreen ({navigation, route}) {
 
 
     return (
-      <ScrollView style={{ paddingTop: 10, paddingLeft: 20, paddingBottom: 50, paddingRight: 20}}>
+      <ScrollView style={{ paddingTop: 20, paddingLeft: 20, paddingBottom: 50, paddingRight: 20}}>
         <ThemeProvider theme={theme} >
 
             {
                 isOverdue > 0 ? (
                     <BannerView 
-                        key="overdue"
-                        backgroundColor={theme.lightColors.warning}
-                        text="Эту приёмку больше нельзя менять, т.к. прошло более cуток с ее начала. Вы по прежнему можете получить отчёт по ней. На Pro тарифе этого ограничения нет."
-                    />
+                        header="Теперь только отчет"
+                        text="Эту приёмку больше нельзя изменять, т.к.&nbsp;прошло более cуток с ее создания. По-прежнему можно получить отчёт по&nbsp;ней. На&nbsp;Pro тарифе этого ограничения нет."
+                        backgroundColor="#ffbf0f"
+                    /> 
                 ) : (
                     <View key="add">
                         <Button 

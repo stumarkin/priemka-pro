@@ -31,7 +31,7 @@ function HomeScreen1() {
             tabBarLabel: 'Приёмка',
             tabBarIcon: ({ color, size }) => (
               <Icon 
-              name="ios-toggle" 
+              name="checkbox-outline" 
               type="ionicon" 
               />
               ),

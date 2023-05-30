@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { 
-    ScrollView, 
-    Pressable,
+    ScrollView,
+    View, 
+    Alert,
     Platform,
     Share
 } from 'react-native';
@@ -10,9 +11,8 @@ import {
     ThemeProvider, 
     Text, 
     Button, 
-    Dialog,
-    CheckBox,
-    Card,
+    ListItem,
+    Switch,
     Divider,
     Skeleton
   } from '@rneui/themed';
@@ -20,11 +20,17 @@ import { theme } from './theme';
 
 
 export default function FailChecksListScreen ({navigation, route}) {
+    const {
+      isPro,
+      content,
+      contentWithReportnames
+    } = route.params;
+    const  [showReportnames, setShowReportnames] = useState(isPro) 
     
-    const onShare = async () => {
+    const onShare = async ( message ) => {
         try {
           const result = await Share.share({
-            message: route.params.content,
+            message,
           });
           if (result.action === Share.sharedAction) {
             if (result.activityType) {
@@ -44,7 +50,7 @@ export default function FailChecksListScreen ({navigation, route}) {
             navigation.setOptions({
               headerRight: () => (
                 <Button 
-                    onPress={onShare}
+                    onPress={()=>onShare(showReportnames ? contentWithReportnames : content)}
                     title={'Отправить'}
                     type="clear" 
                     color="primary"
@@ -52,22 +58,38 @@ export default function FailChecksListScreen ({navigation, route}) {
                 />
               ),
             });
-      }, [navigation]);
+      }, [navigation, showReportnames]);
 
     return (
-        <ScrollView
-            style={{
-                backgroundColor: '#FFF'
-            }}
-        >
-            <Text
-                style={{
-                    padding: 20,
-                    fontSize: 16
-                }}
-            >
-                { route.params.content }
-            </Text>
-        </ScrollView>
+        <View>   
+          <ListItem key="refs" style={{borderBottomWidth: 1, borderBottomColor: 'lightgrey'}}>
+              <ListItem.Content>
+                  <ListItem.Title>Cо ссылками на СНиП и ГОСТ</ListItem.Title>
+              </ListItem.Content>
+              <Switch
+                  value={showReportnames}
+                  onValueChange={ ()=>{
+                    if (!isPro) {
+                      Alert.alert('Время переходить на Pro 🚀', '\nС бесплатным тарифом можно получить список с указанием сути недостатков\n\nПереходите на Pro, с ним к отчету можно добавить ссылки на номера релевынтных СНиП и ГОСТ.')
+                    } else {
+                      setShowReportnames(!showReportnames) 
+                    }
+                      
+                  } }
+                  color={theme.lightColors.primary}
+                  />
+          </ListItem>
+          <ScrollView>
+              <Text
+                  style={{
+                      padding: 20,
+                      paddingBottom: 50,
+                      fontSize: 16
+                  }}
+              >
+                  { showReportnames ? contentWithReportnames : content }
+              </Text>
+          </ScrollView>
+        </View>
     )
 }

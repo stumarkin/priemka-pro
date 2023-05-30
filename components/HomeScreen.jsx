@@ -8,7 +8,8 @@ import {
     View, 
     ScrollView, 
     Pressable, 
-    LinearGradient
+    LinearGradient,
+    Linking
 } from 'react-native';
 import { 
     ThemeProvider, 
@@ -23,6 +24,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 import { init, track } from '@amplitude/analytics-react-native';
+
 
 
 const inclineWord = ( howMany, ofWhat, humanicStyle = false ) => {
@@ -95,7 +97,9 @@ export default function HomeScreen ({navigation}) {
     const [storedForms, setStoredForms] = useState([]);
     const [banners, setBanners] = useState([]);
     const [deviceId, setDeviceId] = useState(null)
-    const [isPro, setIsPro] = useState( false )
+    const [isProDaysLeft, setIsProDaysLeft] = useState( false )
+    const appVersion = '0.1'
+    const [needUpdate, setNeedUpdate] = useState( false )
     const [counter, setCounter] = useState( 0 )
 
     
@@ -116,7 +120,7 @@ export default function HomeScreen ({navigation}) {
         .then(deviceId =>{ 
             setDeviceId(deviceId)
             init('c8698f1fccc72a1744388b9e1341b833', deviceId);
-            track('HomeScreen-View');
+            track('HomeScreen-View', {appVersion});
               
         } )
         
@@ -126,21 +130,32 @@ export default function HomeScreen ({navigation}) {
         // Banner loading
         axios.get(`https://priemka-pro.ru/api/v2/?method=getbanners`)
         .then(res => {
-            if (typeof res.data == 'object'){
-                setBanners( res.data );
+            if (res.data.result === true ){
+                setBanners( res.data.banners );
             } else {
                 console.log( 'Banner load fail. API response:\n' + res.data ) 
             }
-        }) 
+        })
+        
+        // Need update?
+        axios.get(`https://priemka-pro.ru/api/v2/?method=getcurrentversion`)
+        .then(res => {
+            if (res.data.result === true ){
+                setNeedUpdate( appVersion != res.data.currentversion );
+            } else {
+                console.log( 'Banner load fail. API response:\n' + res.data ) 
+            }
+        })
+
     }, []); 
 
     // isPro
     useEffect(()=>{
         if (deviceId) {
-            axios.get(`https://priemka-pro.ru/api/v2/?method=ispro&deviceid=${deviceId}`)
+            axios.get(`https://priemka-pro.ru/api/v2/?method=isprodaysleft&deviceid=${deviceId}`)
             .then(res => {
-                if (typeof res.data == 'object'){
-                    setIsPro( res.data.isPro );
+                if (res.data.result){
+                    setIsProDaysLeft( res.data.isProDaysLeft );
                 } else {
                     console.log( 'isPro load fail. API response:\n' + res.data ) 
                 }
@@ -166,18 +181,21 @@ export default function HomeScreen ({navigation}) {
             <View style={{ padding: 20, paddingTop: 100}}>
                 <ThemeProvider theme={theme}>
                     <View
-                        style={[{justifyContent: 'space-between', flexDirection: 'row',}]}
+                        style={{
+                            justifyContent: 'space-between', 
+                            flexDirection: 'row'
+                        }}
                     >
                         <Text style={{fontSize: 36, fontWeight: 700, marginBottom: 20}}>Приёмка</Text>
                         
                         {
-                            isPro ? (
+                            isProDaysLeft ? (
                                 <Button 
-                                    title="Pro подключен 🚀"
+                                    title={`Pro еще ${isProDaysLeft} дней 🚀`}
                                     containerStyle={{ }} 
                                     buttonStyle={{ 
                                         marginTop: 12,
-                                        width: 130,
+                                        width: 140,
                                         backgroundColor: '#DDD',
                                         borderColor: 'transparent',
                                         borderWidth: 0,
@@ -193,29 +211,42 @@ export default function HomeScreen ({navigation}) {
                             ) : null
                         }
                     </View>
+                    
+                    { 
+                        needUpdate ? (
+                            <BannerView 
+                                header="Обновите приложение"
+                                text="В последней версии испрелены ошибки и добавлены новые возможности."
+                                backgroundColor="#ffbf0f"
+                                onPress={ ()=>{
+                                    track('HomeScreen-BannerNeedUpdate-Press');
+                                    Linking.openURL("https://priemka-pro.ru/appupdate/")
+                                } }
+                            /> 
+                        ) : null
+                    }
 
-                    {!isPro ? bannersUI.top : bannersUI.pro}
+                    { !isProDaysLeft ? bannersUI.top : bannersUI.pro}
 
                     <BannerView 
                         i="new"
                         header='Новая приёмка'
-                        text= { !isPro ? <Text style={{ fontSize: 14 }}>
-                                            Доступно еще {inclineWord(5 - (storedForms.length || 0), 'приёмка')}.{'\n'}На Pro ограничений не будет.
-                                        </Text> : <Text style={{ fontSize: 14 }}>
-                                            Pro подключен. Вас не остановить!
-                                        </Text>   
+                        text= { 
+                            !isProDaysLeft ? (
+                                5 - storedForms.length > 0 ? `Доступно еще ${inclineWord( 5 - storedForms.length, 'приёмка')}.\nНа Pro ограничений не будет.` : `Бесплатные приёмки закончились.\nНа Pro ограничений не будет.`
+                            ): 'Pro подключен. Вас не остановить!' 
                         }
-                        actionControls={ <Button
-                                            title='Новая приёмка' 
-                                            onPress={() =>{
-                                                if ( isPro || storedForms.length<5 ){
-                                                    track('HomeScreen-NewAcceptance-Press' );
-                                                    navigation.navigate('Apartment', {updateStoredForms: updateStoredForms});
-                                                } else {
-                                                    Alert.alert('Время переходить на Pro 🚀', 'Бесплатный тариф ограничен приёмкой 5 квартир.\nПереходите на Pro, в нем нет ограничений.')
-                                                }
-                                            }}
-                                        />
+                        button={ <Button
+                                    title='Начать приёмку' 
+                                    onPress={() =>{
+                                        if ( isProDaysLeft || storedForms.length<5 ){
+                                            track('HomeScreen-NewAcceptance-Press' );
+                                            navigation.navigate('Apartment', {updateStoredForms: updateStoredForms});
+                                        } else {
+                                            Alert.alert('Время переходить на Pro 🚀', '\nБесплатный тариф ограничен приёмкой 5 квартир.\nПереходите на Pro, в нем нет ограничений.')
+                                        }
+                                    }}
+                                />
                         }
                     />                
                     
@@ -232,7 +263,7 @@ export default function HomeScreen ({navigation}) {
                                             containerStyle={{paddingHorizontal: 0}}
                                             onPress={ () =>{ 
                                                 track('HomeScreen-PrevAcceptance-Press');
-                                                navigation.navigate('Apartment', {formId: key.split('_')[1], updateStoredForms, isPro}) 
+                                                navigation.navigate('Apartment', {formId: key.split('_')[1], updateStoredForms, isProDaysLeft}) 
                                             }}
                                         >
                                             <ListItem.Content>
@@ -247,7 +278,7 @@ export default function HomeScreen ({navigation}) {
 
                     {bannersUI.bottom}
 
-                    <Text style={{ textAlign: 'center', fontSize: 12 }}>{deviceId}</Text>
+                    <Text style={{ textAlign: 'center', fontSize: 12, color: 'lightgrey'}}>{deviceId}</Text>
                     <StatusBar style="auto" />
                 </ThemeProvider>
             </View>

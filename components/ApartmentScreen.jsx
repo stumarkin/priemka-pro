@@ -116,33 +116,14 @@ export default function ApartmentScreen ({navigation, route}) {
       return form;
     }
 
-    const onShare = async () => {
-      try {
-        const result = await Share.share({
-          message: getFailChecks(form),
-        });
-        if (result.action === Share.sharedAction) {
-          if (result.activityType) {
-            // shared with activity type of result.activityType
-          } else {
-            // shared
-          }
-        } else if (result.action === Share.dismissedAction) {
-          // dismissed
-        }
-      } catch (error) {
-        Alert.alert(error.message);
-      }
-    };
 
-    const getName = ( obj ) => {
-      return obj.name ? obj.name : ( dictionary[ (obj.templateId ? obj.templateId : obj.id) ].tint || dictionary[ (obj.templateId ? obj.templateId : obj.id) ].name );
+    const getName = ( obj, useReportname = false ) => {
+      return obj.name ? obj.name : ( useReportname ? dictionary[ (obj.templateId ? obj.templateId : obj.id) ].reportname : dictionary[ (obj.templateId ? obj.templateId : obj.id) ].name );
     }
     
 
     // Initial loading
     useEffect(() => {
-
       getDeviceId()
       .then( deviceId => { 
           setDeviceId(deviceId)
@@ -223,14 +204,14 @@ export default function ApartmentScreen ({navigation, route}) {
         });
     }
 
-    const getFailChecks = ( form ) => {
+    const getFailChecks = ( form, useReportname = false) => {
       const failChecks = form?.apartment
         .map( (room) => (
           {
             ...room, 
             sections: room.nested.reduce( (sections, section ) => {
                         const checks = section.nested.reduce( (checks, check) => {
-                          return checks += (!check.value ? ` - ${getName(check)}\n` : '')
+                          return checks += (!check.value ? ` - ${getName(check, useReportname)}\n` : '')
                         }, '' )
                         return sections += (checks!='' ? `${getName(section)}:\n${checks}` : '')
                       }, '') +  (room.comment.length>0 ? `Другое:\n - ${room.comment.replace(/<br>/g, "\n - ") }\n` : '' )
@@ -288,21 +269,11 @@ export default function ApartmentScreen ({navigation, route}) {
       return (
         <View style={{ padding: 20 }}>
           <ThemeProvider theme={theme} >
-            <Skeleton key={0} animation="pulse" height={50} />
+            <Skeleton key={0} animation="pulse" height={170} style={{borderRadius:10 }}/>
             <Divider  key={1} width={10} style={{ opacity: 0 }} />
-            <Skeleton key={2} animation="pulse" height={90} />
+            <Skeleton key={2} animation="pulse" height={400} style={{borderRadius:10 }}/>
             <Divider  key={3} width={10} style={{ opacity: 0 }} />
-            <Skeleton key={4} animation="pulse" height={90} />
-            <Divider  key={5} width={10} style={{ opacity: 0 }} />
-            <Skeleton key={6} animation="pulse" height={90} />
-            <Divider  key={7} width={10} style={{ opacity: 0 }} />
-            <Skeleton key={8} animation="pulse" height={90} />
-            <Divider  key={9} width={10} style={{ opacity: 0 }} />
-            <Skeleton key={10} animation="pulse" height={90} />
-            <Divider  key={11} width={10} style={{ opacity: 0 }} />
-            <Button color={theme.lightColors.grey5}>
-              <Icon type='ionicon' name="add-circle-outline" color="white" /> Добавить комнату
-            </Button>
+            <Skeleton key={4} animation="pulse" height={270} style={{borderRadius:10 }}/>
           </ThemeProvider>
         </View>
       )
@@ -361,8 +332,16 @@ export default function ApartmentScreen ({navigation, route}) {
       { isLoading ? <Text style={{ backgroundColor: "#FEBE00", textAlign: "center", fontSize: 12, padding: 5 }}>Обновление данных</Text> : null }
       <ScrollView style={{ padding: 20}}>
         <ThemeProvider theme={theme} >
-
                 
+                { 
+                    isOverdue ? (
+                        <BannerView 
+                            header="Теперь только отчет"
+                            text="Эту приёмку больше нельзя изменять, т.к.&nbsp;прошло более cуток с ее создания. По-прежнему можно получить отчёт по&nbsp;ней. На&nbsp;Pro тарифе этого ограничения нет."
+                            backgroundColor="#ffbf0f"
+                        /> 
+                    ) : null
+                }
 
                 <BannerView 
                     key="address"
@@ -370,39 +349,36 @@ export default function ApartmentScreen ({navigation, route}) {
                     text="Используется в отчете и поможет найти квартиру среди других приёмок"
                     actionControls={
                         <TextInput
-                        style={{
-                          height: 40,
-                          borderBottomColor: theme.lightColors.grey3,
-                          borderBottomWidth: 2,
-                          fontSize: 19,
-                          padding: 0,
-                        }}
-                        onChangeText={ setAddress }
-                        onEndEditing={ onEndEditingAddress }
-                        value={address}
-                        placeholder="Введите адрес"
-                        autoFocus={address==''}
-                      />
+                            style={{
+                                height: 40,
+                                borderBottomColor: theme.lightColors.grey4,
+                                borderBottomWidth: 2,
+                                fontSize: 19,
+                                padding: 0,
+                                marginBottom: 10
+                                }}
+                            onChangeText={ setAddress }
+                            onEndEditing={ onEndEditingAddress }
+                            value={address}
+                            placeholder="Введите адрес"
+                        />
                     }
                 />
-            
+
                 <BannerView 
                     key="rooms"
                     header="Комнаты и проверки"
-                    actionControls={
-                        <>
-                            { apartmentRoomsUI }
-                            <Button 
-                                disabled={isOverdue}
-                                onPress={()=>{
-                                    track('ApartmentScreen-AddRoom-Press');
-                                    toggleRoomsDialogIsVisible()
-                                }}
-                            >
-                                <Icon type='ionicon' name="add-circle-outline" color='white' /> Добавить комнату
-                            </Button>
-                        </>
-                        
+                    actionControls={apartmentRoomsUI}
+                    button={
+                        <Button 
+                            disabled={isOverdue&&!isPro}
+                            onPress={()=>{
+                                track('ApartmentScreen-AddRoom-Press');
+                                toggleRoomsDialogIsVisible()
+                            }}
+                        >
+                            <Icon type='ionicon' name="add-circle-outline" color='white' /> Добавить комнату
+                        </Button>
                     }
                 />
 
@@ -410,14 +386,14 @@ export default function ApartmentScreen ({navigation, route}) {
                     key="report"
                     header="Отчет"
                     text={`Всего ${inclineWord(checksCountTotal, "проверка")} и в них ${inclineWord(failChecksCountTotal, "недостаток", true)}`}
-                    actionControls={
+                    button={
                             <View style={{alignContent: 'space-between', flexDirection: 'row'}}>
                                 <View style={{width:'50%'}}>    
                                     <Button
                                         key='list'
                                         onPress={() => {
                                             track('ApartmentScreen-List-Press', { failChecksCountTotal });
-                                            navigation.navigate('FailChecksList', { title: 'Список', content: getFailChecks(form)})
+                                            navigation.navigate('FailChecksList', { title: 'Список', content: getFailChecks(form), contentWithReportnames: getFailChecks(form, true), isPro })
                                         }}
                                         disabled={failChecksCountTotal == 0}
                                         buttonStyle={{ marginRight: 5, backgroundColor: '#7E33B8' }}
@@ -474,8 +450,21 @@ export default function ApartmentScreen ({navigation, route}) {
                   key={i}
                   title={dictionary[item.id].name}
                   containerStyle={{ backgroundColor: 'white', borderWidth: 0 }}
-                  checkedIcon="dot-circle-o"
-                  uncheckedIcon="circle-o"
+                  textStyle={{ fontSize: 16}}
+                  checkedIcon={
+                    <Icon
+                        name="radio-button-on-outline"
+                        type="ionicon"
+                        size={18}
+                    />
+                  }
+                  uncheckedIcon={
+                    <Icon
+                        name="radio-button-off-outline"
+                        type="ionicon"
+                        size={18}
+                    />
+                  }
                   checked={checkedRoomId === item.id}
                   onPress={() => setCheckedRoomId(item.id)}
                 />
