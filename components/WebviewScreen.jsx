@@ -4,9 +4,8 @@ import {
     Share
 } from 'react-native';
 import { 
-    Icon, Button
+    Button
 } from '@rneui/themed';
-import { theme } from './theme';
 import { WebView } from 'react-native-webview';
 
 

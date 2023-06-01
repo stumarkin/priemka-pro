@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import BannerView from './BannerView';
+import {BannerView} from './BannerView';
 import { 
     View, 
     ScrollView, 

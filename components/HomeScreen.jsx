@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import BannerView from './BannerView';
+import { BannerView, BannerNeedUpdate } from './BannerView';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from '@react-navigation/native';
@@ -279,15 +279,7 @@ export default function HomeScreen ({navigation}) {
                             <>
                                 { 
                                     needUpdate ? (
-                                        <BannerView 
-                                            header="Обновите приложение"
-                                            text="В последней версии испрелены ошибки и добавлены новые возможности."
-                                            backgroundColor="#ffbf0f"
-                                            onPress={ ()=>{
-                                                track('HomeScreen-BannerNeedUpdate-Press');
-                                                Linking.openURL("https://priemka-pro.ru/appupdate/")
-                                            } }
-                                        /> 
+                                        <BannerNeedUpdate/> 
                                     ) : null
                                 }
 

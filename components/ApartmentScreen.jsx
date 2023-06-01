@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import BannerView from './BannerView';
+import {BannerIsOverdued, BannerView} from './BannerView';
 import { 
   Alert, 
   ScrollView, 
@@ -336,11 +336,7 @@ export default function ApartmentScreen ({navigation, route}) {
                 
                 { 
                     isOverdue ? (
-                        <BannerView 
-                            header="Теперь только отчет"
-                            text="Эту приёмку больше нельзя изменять, т.к.&nbsp;прошло более cуток с ее создания. По-прежнему можно получить отчёт по&nbsp;ней. На&nbsp;Pro тарифе этого ограничения нет."
-                            backgroundColor="#ffbf0f"
-                        /> 
+                        <BannerIsOverdued/> 
                     ) : null
                 }
 

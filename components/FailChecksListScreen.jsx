@@ -3,19 +3,14 @@ import {
     ScrollView,
     View, 
     Alert,
-    Platform,
     Share
 } from 'react-native';
 import { 
-    Icon,
-    ThemeProvider, 
     Text, 
     Button, 
     ListItem,
     Switch,
-    Divider,
-    Skeleton
-  } from '@rneui/themed';
+} from '@rneui/themed';
 import { theme } from './theme';
 
 

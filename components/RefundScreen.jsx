@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import BannerView from './BannerView';
+import {BannerView} from './BannerView';
 
 import { StatusBar } from 'expo-status-bar';
 import { 

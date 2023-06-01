@@ -12,7 +12,31 @@ import {
 } from '@rneui/themed';
 
 
-export default function BannerView (props) {
+export function BannerIsOverdued(){
+    return (
+        <BannerView 
+            header="Тут только отчет"
+            text="Эту приёмку больше нельзя изменять, т.к.&nbsp;прошло более cуток с ее создания. По-прежнему можно получить отчёт по&nbsp;ней. На&nbsp;Pro тарифе этого ограничения нет."
+            backgroundColor="#ffbf0f"
+        /> 
+    )
+}
+
+export function BannerNeedUpdate(){
+    return (
+        <BannerView 
+            header="Обновите приложение"
+            text="В последней версии испрелены ошибки и добавлены новые возможности."
+            backgroundColor="#ffbf0f"
+            onPress={ ()=>{
+                track('HomeScreen-BannerNeedUpdate-Press');
+                Linking.openURL("https://priemka-pro.ru/appupdate/")
+            } }
+        /> 
+    )
+}
+
+export  function BannerView (props) {
     const {
         onPress, 
         i, 
@@ -35,7 +59,7 @@ export default function BannerView (props) {
                         backgroundColor: backgroundColor, 
                         padding: 0,
                         borderRadius: 10,
-                        overflow: 'hidden' 
+                        overflow: 'hidden'
                     }}
                 >
                     {   // Header
