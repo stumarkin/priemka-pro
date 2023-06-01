@@ -21,11 +21,11 @@ import { theme } from './theme';
 
 export default function FailChecksListScreen ({navigation, route}) {
     const {
-      isPro,
+      ProDaysLeft,
       content,
       contentWithReportnames
     } = route.params;
-    const  [showReportnames, setShowReportnames] = useState(isPro) 
+    const  [showReportnames, setShowReportnames] = useState(ProDaysLeft) 
     
     const onShare = async ( message ) => {
         try {
@@ -69,7 +69,7 @@ export default function FailChecksListScreen ({navigation, route}) {
               <Switch
                   value={showReportnames}
                   onValueChange={ ()=>{
-                    if (!isPro) {
+                    if (!ProDaysLeft) {
                       Alert.alert('Время переходить на Pro 🚀', '\nС бесплатным тарифом можно получить список с указанием сути недостатков\n\nПереходите на Pro, с ним к отчету можно добавить ссылки на номера релевынтных СНиП и ГОСТ.')
                     } else {
                       setShowReportnames(!showReportnames) 

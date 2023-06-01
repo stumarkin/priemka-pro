@@ -441,7 +441,7 @@ export default function RoomScreen ({navigation, route}) {
                         title="Да, удалить" 
                         onPress={()=>{
                             deleteRoom(room);
-                            navigation.navigate('Apartment')
+                            navigation.goBack();
                         }} 
                     />
                 </Dialog.Actions>

@@ -81,7 +81,7 @@ export default function RefundCalculationScreen ({navigation, route}) {
                 <ThemeProvider theme={theme}>
                      
                     <BannerView 
-                        backgroundImage='https://alfabank.servicecdn.ru/site-upload/de/46/60/1_desktop.png'
+                        backgroundImage='https://priemka-pro.ru/webview/assets/1percent.png'
                         header={refund.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + ' ₽'}
                         text={`Это сумма к возмещению для вашей квартиры площадью ${square}м² ${designTypes[designTypeSelected].name.toLowerCase()}\nРасчитана на основе статистики других пользователей.`}
 

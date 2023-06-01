@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import BannerView from './BannerView';
-
 import { 
-    Alert,
     View, 
     ScrollView, 
     Linking
@@ -12,10 +10,8 @@ import {
     ThemeProvider, 
     Text, 
     Button, 
-    ListItem,
     Divider,
-    Icon,
-    Chip
+    Skeleton
 } from '@rneui/themed';
 import { theme } from './theme';
 import axios from 'axios';
@@ -34,7 +30,7 @@ const getDeviceId = async () => {
 }
 
 export default function ServicesScreen ({navigation}) {
- 
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [deviceId, setDeviceId] = useState(null)
     const [banners, setBanners] = useState([]);
     const [bannerSection, setBannerSection] = useState(null);
@@ -55,6 +51,7 @@ export default function ServicesScreen ({navigation}) {
         .then(res => {
             if (res.data.result === true ){
                 setBanners( res.data.banners );
+                setIsInitialLoading(false)
             } else {
                 console.log( 'Banner load fail. API response:\n' + res.data ) 
             }
@@ -117,15 +114,29 @@ export default function ServicesScreen ({navigation}) {
             <View style={{ padding: 20, paddingTop: 100}}>
                 <ThemeProvider theme={theme}>
                     <Text style={{fontSize: 36, fontWeight: 700}}>Услуги</Text>
-                    <View style={[{
-                                    flexDirection: 'row',
-                                    flexWrap: 'wrap'
-                                }]}
-                    >
-                        {bannersSectionsUI}
-                    </View>
-                    {bannersUI}
-                    <Text style={{ textAlign: 'center', fontSize: 12 }}>{deviceId}</Text>
+                    {
+                        isInitialLoading ? (
+                            <>
+                                <Skeleton key={0} animation="pulse" height={170} style={{borderRadius: 10}}/>
+                                <Divider  key={1} width={10} style={{ opacity: 0 }} />
+                                <Skeleton key={2} animation="pulse" height={170} />
+                                <Divider  key={3} width={10} style={{ opacity: 0 }} />
+                                <Skeleton key={4} animation="pulse" height={370} />
+                            </>
+                        ) : (
+                            <>
+                                <View style={[{
+                                                flexDirection: 'row',
+                                                flexWrap: 'wrap'
+                                            }]}
+                                >
+                                    {bannersSectionsUI}
+                                </View>
+                                {bannersUI}
+                            </>
+                        )
+                    }
+                    {/* <Text style={{ textAlign: 'center', fontSize: 12 }}>{deviceId}</Text> */}
                     <StatusBar style="auto" />
                 </ThemeProvider>
             </View>

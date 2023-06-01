@@ -84,7 +84,7 @@ export default function ApartmentScreen ({navigation, route}) {
     const [isOverdue, setIsOverdue] = useState(false);
     const overdueAfterSeconds = 60 * 60 *24;
     const [dictionary, setDictionary] = useState({});
-    const isPro = route.params.isPro;
+    const ProDaysLeft = route.params.ProDaysLeft;
     const updateStoredForms = () => route.params.updateStoredForms();
     
     // Dialog Add Room
@@ -147,7 +147,7 @@ export default function ApartmentScreen ({navigation, route}) {
                 form = addRoom(room, form, dictionary );
               })
             }
-            setIsOverdue( isPro ? false : Math.floor((Date.now() - form.timestampCreate)/1000) > overdueAfterSeconds )
+            setIsOverdue( ProDaysLeft ? false : Math.floor((Date.now() - form.timestampCreate)/1000) > overdueAfterSeconds )
             setForm( form );
             setIsInitialLoading(false)
         })
@@ -371,7 +371,7 @@ export default function ApartmentScreen ({navigation, route}) {
                     actionControls={apartmentRoomsUI}
                     button={
                         <Button 
-                            disabled={isOverdue&&!isPro}
+                            disabled={isOverdue}
                             onPress={()=>{
                                 track('ApartmentScreen-AddRoom-Press');
                                 toggleRoomsDialogIsVisible()
@@ -393,7 +393,7 @@ export default function ApartmentScreen ({navigation, route}) {
                                         key='list'
                                         onPress={() => {
                                             track('ApartmentScreen-List-Press', { failChecksCountTotal });
-                                            navigation.navigate('FailChecksList', { title: 'Список', content: getFailChecks(form), contentWithReportnames: getFailChecks(form, true), isPro })
+                                            navigation.navigate('FailChecksList', { title: 'Список', content: getFailChecks(form), contentWithReportnames: getFailChecks(form, true), ProDaysLeft })
                                         }}
                                         disabled={failChecksCountTotal == 0}
                                         buttonStyle={{ marginRight: 5, backgroundColor: '#7E33B8' }}
@@ -424,7 +424,7 @@ export default function ApartmentScreen ({navigation, route}) {
           <Divider width={10} style={{ opacity: 0 }} />
 
           {
-            route.params.formId && isPro ? (
+            route.params.formId && ProDaysLeft ? (
                 <Button 
                       title="Удалить квартиру"
                       type="clear"

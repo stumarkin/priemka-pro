@@ -7,8 +7,6 @@ import {
     Alert,
     View, 
     ScrollView, 
-    Pressable, 
-    LinearGradient,
     Linking
 } from 'react-native';
 import { 
@@ -17,7 +15,7 @@ import {
     Button, 
     ListItem,
     Divider,
-    Icon
+    Skeleton
 } from '@rneui/themed';
 import { theme } from './theme';
 import axios from 'axios';
@@ -94,10 +92,11 @@ const getDeviceId = async () => {
 
 export default function HomeScreen ({navigation}) {
     // AsyncStorage.clear(); 
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [storedForms, setStoredForms] = useState([]);
     const [banners, setBanners] = useState([]);
     const [deviceId, setDeviceId] = useState(null)
-    const [isProDaysLeft, setIsProDaysLeft] = useState( false )
+    const [ProDaysLeft, setProDaysLeft] = useState( false )
     const appVersion = '0.1'
     const [needUpdate, setNeedUpdate] = useState( false )
     const [counter, setCounter] = useState( 0 )
@@ -152,14 +151,14 @@ export default function HomeScreen ({navigation}) {
     // isPro
     useEffect(()=>{
         if (deviceId) {
-            axios.get(`https://priemka-pro.ru/api/v2/?method=isprodaysleft&deviceid=${deviceId}`)
+            axios.get(`https://priemka-pro.ru/api/v2/?method=ProDaysLeft&deviceid=${deviceId}`)
             .then(res => {
                 if (res.data.result){
-                    setIsProDaysLeft( res.data.isProDaysLeft );
+                    setProDaysLeft( res.data.ProDaysLeft );
                 } else {
                     console.log( 'isPro load fail. API response:\n' + res.data ) 
                 }
-                
+                setIsInitialLoading(false)
             })
         }
     },[deviceId, counter]) 
@@ -189,9 +188,9 @@ export default function HomeScreen ({navigation}) {
                         <Text style={{fontSize: 36, fontWeight: 700, marginBottom: 20}}>Приёмка</Text>
                         
                         {
-                            isProDaysLeft ? (
+                            ProDaysLeft ? (
                                 <Button 
-                                    title={`Pro еще ${isProDaysLeft} дней 🚀`}
+                                    title={`Pro еще ${ProDaysLeft} дней 🚀`}
                                     containerStyle={{ }} 
                                     buttonStyle={{ 
                                         marginTop: 12,
@@ -212,73 +211,87 @@ export default function HomeScreen ({navigation}) {
                         }
                     </View>
                     
-                    { 
-                        needUpdate ? (
-                            <BannerView 
-                                header="Обновите приложение"
-                                text="В последней версии испрелены ошибки и добавлены новые возможности."
-                                backgroundColor="#ffbf0f"
-                                onPress={ ()=>{
-                                    track('HomeScreen-BannerNeedUpdate-Press');
-                                    Linking.openURL("https://priemka-pro.ru/appupdate/")
-                                } }
-                            /> 
-                        ) : null
+                    {
+                        isInitialLoading ? (
+                            <>
+                                <Skeleton key={0} animation="pulse" height={170} style={{borderRadius: 10}}/>
+                                <Divider  key={1} width={10} style={{ opacity: 0 }} />
+                                <Skeleton key={2} animation="pulse" height={170} />
+                                <Divider  key={3} width={10} style={{ opacity: 0 }} />
+                                <Skeleton key={4} animation="pulse" height={370} />
+                            </>
+                        ) : (
+                            <>
+                                { 
+                                    needUpdate ? (
+                                        <BannerView 
+                                            header="Обновите приложение"
+                                            text="В последней версии испрелены ошибки и добавлены новые возможности."
+                                            backgroundColor="#ffbf0f"
+                                            onPress={ ()=>{
+                                                track('HomeScreen-BannerNeedUpdate-Press');
+                                                Linking.openURL("https://priemka-pro.ru/appupdate/")
+                                            } }
+                                        /> 
+                                    ) : null
+                                }
+
+                                { !ProDaysLeft ? bannersUI.top : bannersUI.pro}
+
+                                <BannerView 
+                                    i="new"
+                                    header='Новая приёмка'
+                                    text= { 
+                                        !ProDaysLeft ? (
+                                            5 - storedForms.length > 0 ? `Доступно еще ${inclineWord( 5 - storedForms.length, 'приёмка')}.\nНа Pro ограничений не будет.` : `Бесплатные приёмки закончились.\nНа Pro ограничений не будет.`
+                                        ): 'Pro подключен. Вас не остановить!' 
+                                    }
+                                    button={ <Button
+                                                title='Начать приёмку' 
+                                                onPress={() =>{
+                                                    if ( ProDaysLeft || storedForms.length<5 ){
+                                                        track('HomeScreen-NewAcceptance-Press' );
+                                                        navigation.navigate('Apartment', {updateStoredForms: updateStoredForms});
+                                                    } else {
+                                                        Alert.alert('Время переходить на Pro 🚀', '\nБесплатный тариф ограничен приёмкой 5 квартир.\nПереходите на Pro, в нем нет ограничений.')
+                                                    }
+                                                }}
+                                            />
+                                    }
+                                />                
+                                
+                                <BannerView 
+                                    i="prev"
+                                    header='Предыдущие приёмки'
+                                    text= { storedForms.length==0 ? 'Здесь появятся все ваши приемки. Указывайте адрес приёмки для удобного поиска в общем списке' : null }
+                                    actionControls={
+                                        storedForms.map( ([key, valueJSON]) => {
+                                            const value = JSON.parse(valueJSON);
+                                            return (
+                                                    <ListItem 
+                                                        key={key} 
+                                                        containerStyle={{paddingHorizontal: 0}}
+                                                        onPress={ () =>{ 
+                                                            track('HomeScreen-PrevAcceptance-Press');
+                                                            navigation.navigate('Apartment', {formId: key.split('_')[1], updateStoredForms, ProDaysLeft }) 
+                                                        }}
+                                                    >
+                                                        <ListItem.Content>
+                                                            <ListItem.Title style={{fontWeight: 600}}>{value.address ? value.address : 'Без адреса'}</ListItem.Title>
+                                                            <ListItem.Subtitle style={{fontSize: 14}}>{inclineWord(value.checksCountTotal, "проверка")}, {inclineWord(value.failChecksCountTotal, "недостаток", true)}</ListItem.Subtitle>
+                                                        </ListItem.Content>
+                                                        <ListItem.Chevron />
+                                                    </ListItem>
+                                            )
+                                    })}
+                                />                
+
+                                {bannersUI.bottom}
+                            </>
+                        )
                     }
-
-                    { !isProDaysLeft ? bannersUI.top : bannersUI.pro}
-
-                    <BannerView 
-                        i="new"
-                        header='Новая приёмка'
-                        text= { 
-                            !isProDaysLeft ? (
-                                5 - storedForms.length > 0 ? `Доступно еще ${inclineWord( 5 - storedForms.length, 'приёмка')}.\nНа Pro ограничений не будет.` : `Бесплатные приёмки закончились.\nНа Pro ограничений не будет.`
-                            ): 'Pro подключен. Вас не остановить!' 
-                        }
-                        button={ <Button
-                                    title='Начать приёмку' 
-                                    onPress={() =>{
-                                        if ( isProDaysLeft || storedForms.length<5 ){
-                                            track('HomeScreen-NewAcceptance-Press' );
-                                            navigation.navigate('Apartment', {updateStoredForms: updateStoredForms});
-                                        } else {
-                                            Alert.alert('Время переходить на Pro 🚀', '\nБесплатный тариф ограничен приёмкой 5 квартир.\nПереходите на Pro, в нем нет ограничений.')
-                                        }
-                                    }}
-                                />
-                        }
-                    />                
                     
-                    <BannerView 
-                        i="prev"
-                        header='Предыдущие приёмки'
-                        text= { storedForms.length==0 ? 'Здесь появятся все ваши приемки. Указывайте адрес приёмки для удобного поиска в общем списке' : null }
-                        actionControls={
-                            storedForms.map( ([key, valueJSON]) => {
-                                const value = JSON.parse(valueJSON);
-                                return (
-                                        <ListItem 
-                                            key={key} 
-                                            containerStyle={{paddingHorizontal: 0}}
-                                            onPress={ () =>{ 
-                                                track('HomeScreen-PrevAcceptance-Press');
-                                                navigation.navigate('Apartment', {formId: key.split('_')[1], updateStoredForms, isProDaysLeft}) 
-                                            }}
-                                        >
-                                            <ListItem.Content>
-                                                <ListItem.Title style={{fontWeight: 600}}>{value.address ? value.address : 'Без адреса'}</ListItem.Title>
-                                                <ListItem.Subtitle style={{fontSize: 14}}>{inclineWord(value.checksCountTotal, "проверка")}, {inclineWord(value.failChecksCountTotal, "недостаток", true)}</ListItem.Subtitle>
-                                            </ListItem.Content>
-                                            <ListItem.Chevron />
-                                        </ListItem>
-                                )
-                        })}
-                    />                
-
-                    {bannersUI.bottom}
-
-                    <Text style={{ textAlign: 'center', fontSize: 12, color: 'lightgrey'}}>{deviceId}</Text>
+                    {/* <Text style={{ textAlign: 'center', fontSize: 12, color: 'lightgrey'}}>{deviceId}</Text> */}
                     <StatusBar style="auto" />
                 </ThemeProvider>
             </View>
