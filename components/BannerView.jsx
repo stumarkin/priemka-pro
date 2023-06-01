@@ -75,7 +75,8 @@ export default function BannerView (props) {
                                         fontSize: 14, 
                                         marginBottom: 0,
                                         paddingLeft: 20,
-                                        paddingBottom: 20 
+                                        paddingRight: (backgroundImage ? 0: 20),
+                                        paddingBottom: (actionControls||button ? 10: 20) 
                                     }}
                                 >
                                     {text}
@@ -94,13 +95,6 @@ export default function BannerView (props) {
                             ) : null 
                         }
                     </View>
-
-
-
-
-                   
-                    {/* { backgroundImage || actionControls ? (<Divider width={10} style={{ opacity: 0 }} />) : null }  */}
-                    
 
                     { 
                         actionControls ? (

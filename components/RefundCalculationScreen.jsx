@@ -6,6 +6,7 @@ import {
     View, 
     ScrollView, 
     TextInput,
+    Text
 } from 'react-native';
 import { 
     ThemeProvider, 
@@ -81,12 +82,11 @@ export default function RefundCalculationScreen ({navigation, route}) {
                 <ThemeProvider theme={theme}>
                      
                     <BannerView 
-                        backgroundImage='https://priemka-pro.ru/webview/assets/1percent.png'
-                        header={refund.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + ' ₽'}
-                        text={`Это сумма к возмещению для вашей квартиры площадью ${square}м² ${designTypes[designTypeSelected].name.toLowerCase()}\nРасчитана на основе статистики других пользователей.`}
+                        backgroundImage='https://priemka-pro.ru/webview/assets/1percent.png?q=1'
+                        header={<Text style={{fontSize: 26}}>{refund.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + ' ₽'}</Text>}
+                        text={`Возможное возмещение по вашей квартире площадью ${square}м² ${designTypes[designTypeSelected].name.toLowerCase()}`}
 
                     />
-                    <Divider width={10} style={{ opacity: 0 }} />
                     
                     <BannerView 
                         header='Возмещение "под ключ"'

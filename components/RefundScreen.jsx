@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import BannerView from './BannerView';
+
 import { StatusBar } from 'expo-status-bar';
 import { 
     Alert,
@@ -17,7 +19,6 @@ import {
     CheckBox
 } from '@rneui/themed';
 import { theme } from './theme';
-import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 
@@ -64,83 +65,79 @@ export default function RefundScreen ({navigation}) {
             <View style={{ padding: 20, paddingTop: 100}}>
                 <ThemeProvider theme={theme}>
                     <Text style={{fontSize: 36, fontWeight: 700}}>Возмещение</Text>
-                    <Text style={{ fontSize: 16 }}>Требования ко всем видам строительных работ описаны в СНиП. Несоответствие результата работ требованиям должно быть зафиксировано и оценено экспертизой, а с застрощика должно быть быть получено возмещение. В досудебном или судебном порядке.</Text>
                     
+                    <BannerView 
+                        header="Какие основания?"
+                        text='Застрощик должен возместить дольщику стоимость устранения недостатков, если таковые будут выявлены. Для этого привлекается аккредитованные эксперты, на основании их заключения выдвигаются требования. Взыскание осуществляется в&nbsp;досудебном или судебном порядке.'
+                        backgroundColor="#fefefe"
+                    /> 
 
-
-                    <Divider width={10} style={{ opacity: 0 }} />
-                    
-                    <View
-                        style={{
-                            backgroundColor: 'white', 
-                            padding: 10,
-                            borderRadius: 10,
-                            overflow: 'hidden' 
-                        }}
-                    >
-                       
-                        <Text style={{fontSize: 22, fontWeight: 700, margin: 10}}>Расчёт суммы возмещения</Text>
-                        <Text style={{ fontSize: 14, marginLeft: 10, marginBottom: 10 }}>Площадь квартиры:</Text>
-                        <View style={[{
-                            flexDirection: 'row',
-                            flexWrap: 'wrap'
-                        }]}
-                        >               
-                            <TextInput
-                                style={{
-                                    height: 40,
-                                    borderBottomColor: theme.lightColors.grey3,
-                                    borderBottomWidth: 2,
-                                    fontSize: 28,
-                                    padding: 2,
-                                    marginLeft: 10,
-                                    marginRight: 10,
-                                    width: 55
+                    <BannerView 
+                        header="Расчёт суммы"
+                        text="На основе статистики возмещений других дольщиков можно рассчитать примерную сумму. Укажите площадь квартиры и тип отделки:"
+                        backgroundColor="#fefefe"
+                        actionControls={
+                            <>
+                                <View style={{
+                                    flexDirection: 'row',
+                                    flexWrap: 'wrap',
                                 }}
-                                inputMode='numeric'
-                                onChangeText={setSquare}
-                                placeholder=""
-                                value={square}
+                                >               
+                                    <TextInput
+                                        style={{
+                                            height: 40,
+                                            borderBottomColor: theme.lightColors.grey3,
+                                            borderBottomWidth: 2,
+                                            fontSize: 28,
+                                            padding: 2,
+                                            marginLeft: 10,
+                                            marginRight: 10,
+                                            width: 55
+                                        }}
+                                        inputMode='numeric'
+                                        onChangeText={setSquare}
+                                        placeholder="00"
+                                        value={square}
+                                    />
+                                    <Text style={{ fontSize: 22, marginTop: 10 }}>м²</Text>
+                                </View>
+                                
+                                <View style={{ marginLeft: 0}}>
+                                    {designTypes.map((designType, i) => (
+                                        <CheckBox
+                                            key={i}
+                                            title={designType.name}
+                                            checkedIcon="dot-circle-o"
+                                            uncheckedIcon="circle-o"
+                                            checked={designTypeSelected == i}
+                                            onPress={() => setDesignTypeSelected(i)}
+                                            containerStyle={{ 
+                                                backgroundColor: 'white', 
+                                                borderWidth: 0,
+                                                marginBottom: 5,
+                                                padding: 0
+                                            }}
+                                        />
+                                    ))}
+                                </View>
+                            </>
+                        }
+                        button={
+                            <Button
+                                title='Расcчитать' 
+                                onPress={() =>{
+                                    if ( square!='' ){
+                                        track('RefundScreen-CalculateRefund-Press', { square, designTypeSelected });
+                                        navigation.navigate('RefundCalculation', {title: '', square, designTypes, designTypeSelected});
+                                    } else {
+                                        alert('Укажите площадь вашей квартиры для расчета суммы возмещения.')
+                                    }
+                                }}
                             />
-                            <Text style={{ fontSize: 22, marginTop: 10 }}>м²</Text>
-                        </View>
-                        
-                        <View style={{ marginLeft: 0}}>
-                            {designTypes.map((designType, i) => (
-                                <CheckBox
-                                    key={i}
-                                    title={designType.name}
-                                    checkedIcon="dot-circle-o"
-                                    uncheckedIcon="circle-o"
-                                    checked={designTypeSelected == i}
-                                    onPress={() => setDesignTypeSelected(i)}
-                                    containerStyle={{ 
-                                        backgroundColor: 'white', 
-                                        borderWidth: 0,
-                                        marginBottom: 5,
-                                        padding: 0
-                                    }}
-                                />
-                            ))}
-                        </View>
-                        <Divider width={10} style={{ opacity: 0 }} />
-
-                        <Button
-                            title='Расcчитать' 
-                            onPress={() =>{
-                                if ( square!='' ){
-                                    track('RefundScreen-CalculateRefund-Press', { square, designTypeSelected });
-                                    navigation.navigate('RefundCalculation', {title: '', square, designTypes, designTypeSelected});
-                                } else {
-                                    alert('Укажите площадь вашей квартиры для расчета суммы возмещения.')
-                                }
-                            }}
-                        />
-                    </View>
-                    <Divider width={10} style={{ opacity: 0 }} />
+                        }
+                    /> 
                     
 
-                    {/* <Text style={{ textAlign: 'center', fontSize: 12 }}>{deviceId}</Text> */}
                     <StatusBar style="auto" />
                 </ThemeProvider>
             </View>
