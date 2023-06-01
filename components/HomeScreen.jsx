@@ -1,8 +1,9 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import BannerView from './BannerView';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
+import { useFocusEffect } from '@react-navigation/native';
 import { 
     Alert,
     View, 
@@ -63,6 +64,39 @@ const inclineWord = ( howMany, ofWhat, humanicStyle = false ) => {
                 case 4: return `${howMany} приёмки`
                 default: return `${howMany} приёмок`
             }
+        case "день":
+            if ([11,12,13,14].includes(howMany)){
+                return `${howMany} дней`;
+            }
+            switch ( howMany - (Math.floor(howMany/10)*10) ){
+                case 1: return `${howMany} день`
+                case 2:
+                case 3:
+                case 4: return `${howMany} дня`
+                default: return `${howMany} дней`
+            }
+        case "минута":
+            if ([11,12,13,14].includes(howMany)){
+                return `${howMany} минут`;
+            }
+            switch ( howMany - (Math.floor(howMany/10)*10) ){
+                case 1: return `${howMany} минута`
+                case 2:
+                case 3:
+                case 4: return `${howMany} минуты`
+                default: return `${howMany} минут`
+            }
+        case "час":
+            if ([11,12,13,14].includes(howMany)){
+                return `${howMany} часов`;
+            }
+            switch ( howMany - (Math.floor(howMany/10)*10) ){
+                case 1: return `${howMany} час`
+                case 2:
+                case 3:
+                case 4: return `${howMany} часа`
+                default: return `${howMany} часов`
+            }
         default: return `${howMany} ${ofWhat}`
     }
   }
@@ -87,13 +121,26 @@ const getDeviceId = async () => {
     return deviceId;
 }
 
+const getTimeElapsed = ( timestamp ) => {
+    const millis = Date.now() - timestamp;
+    const secondsElapsed = Math.floor(millis / 1000);
+    if (secondsElapsed<60) {
+        return 'только что '
+     } else  if (secondsElapsed<60*60) {
+        return inclineWord(Math.floor(secondsElapsed/60), 'минута') + ' назад'
+     } else  if (secondsElapsed<(60*60*24)) {
+        return inclineWord(Math.floor(secondsElapsed/(60*60)), 'час') + ' назад'
+     } else {
+        return inclineWord(Math.floor(secondsElapsed/(60*60*24)), 'день') + ' назад'
+     }
+}
 
 
 
 export default function HomeScreen ({navigation}) {
     // AsyncStorage.clear(); 
     const [isInitialLoading, setIsInitialLoading] = useState(true);
-    const [storedForms, setStoredForms] = useState([]);
+    const [previousForms, setPreviousForms] = useState([]);
     const [banners, setBanners] = useState([]);
     const [deviceId, setDeviceId] = useState(null)
     const [ProDaysLeft, setProDaysLeft] = useState( false )
@@ -101,12 +148,15 @@ export default function HomeScreen ({navigation}) {
     const [needUpdate, setNeedUpdate] = useState( false )
     const [counter, setCounter] = useState( 0 )
 
-    
-    const updateStoredForms = () => {
+    const DESC = (a,b) => a - b;
+
+    const getPreviousForms = () => {
         AsyncStorage.getAllKeys()
         .then( keys => {
             AsyncStorage.multiGet( keys.filter( key => key.indexOf('form') > -1) )
-            .then( res => setStoredForms(res))
+            .then( res => {
+                setPreviousForms( res.sort((firstItem, secondItem) => JSON.parse(secondItem[1]).timestamp - JSON.parse(firstItem[1]).timestamp) )
+            })
         })
     }
 
@@ -123,8 +173,6 @@ export default function HomeScreen ({navigation}) {
               
         } )
         
-        // Previous Forms
-        updateStoredForms()
 
         // Banner loading
         axios.get(`https://priemka-pro.ru/api/v2/?method=getbanners`)
@@ -162,6 +210,13 @@ export default function HomeScreen ({navigation}) {
             })
         }
     },[deviceId, counter]) 
+
+    useFocusEffect(
+        useCallback(() => {
+            getPreviousForms()
+        }, [])
+      );
+    
 
 
     // Banners with sections sorting
@@ -243,15 +298,15 @@ export default function HomeScreen ({navigation}) {
                                     header='Новая приёмка'
                                     text= { 
                                         !ProDaysLeft ? (
-                                            5 - storedForms.length > 0 ? `Доступно еще ${inclineWord( 5 - storedForms.length, 'приёмка')}.\nНа Pro ограничений не будет.` : `Бесплатные приёмки закончились.\nНа Pro ограничений не будет.`
+                                            5 - previousForms.length > 0 ? `Доступно еще ${inclineWord( 5 - previousForms.length, 'приёмка')}.\nНа Pro ограничений не будет.` : `Бесплатные приёмки закончились.\nНа Pro ограничений не будет.`
                                         ): 'Pro подключен. Вас не остановить!' 
                                     }
                                     button={ <Button
                                                 title='Начать приёмку' 
                                                 onPress={() =>{
-                                                    if ( ProDaysLeft || storedForms.length<5 ){
+                                                    if ( ProDaysLeft || previousForms.length<5 ){
                                                         track('HomeScreen-NewAcceptance-Press' );
-                                                        navigation.navigate('Apartment', {updateStoredForms: updateStoredForms});
+                                                        navigation.navigate('Apartment', { getPreviousForms });
                                                     } else {
                                                         Alert.alert('Время переходить на Pro 🚀', '\nБесплатный тариф ограничен приёмкой 5 квартир.\nПереходите на Pro, в нем нет ограничений.')
                                                     }
@@ -263,9 +318,9 @@ export default function HomeScreen ({navigation}) {
                                 <BannerView 
                                     i="prev"
                                     header='Предыдущие приёмки'
-                                    text= { storedForms.length==0 ? 'Здесь появятся все ваши приемки. Указывайте адрес приёмки для удобного поиска в общем списке' : null }
+                                    text= { previousForms.length==0 ? 'Здесь появятся все ваши приемки. Указывайте адрес приёмки для удобного поиска в общем списке' : null }
                                     actionControls={
-                                        storedForms.map( ([key, valueJSON]) => {
+                                        previousForms.map( ([key, valueJSON]) => {
                                             const value = JSON.parse(valueJSON);
                                             return (
                                                     <ListItem 
@@ -273,12 +328,12 @@ export default function HomeScreen ({navigation}) {
                                                         containerStyle={{paddingHorizontal: 0}}
                                                         onPress={ () =>{ 
                                                             track('HomeScreen-PrevAcceptance-Press');
-                                                            navigation.navigate('Apartment', {formId: key.split('_')[1], updateStoredForms, ProDaysLeft }) 
+                                                            navigation.navigate('Apartment', {formId: key.split('_')[1], getPreviousForms, ProDaysLeft }) 
                                                         }}
                                                     >
                                                         <ListItem.Content>
                                                             <ListItem.Title style={{fontWeight: 600}}>{value.address ? value.address : 'Без адреса'}</ListItem.Title>
-                                                            <ListItem.Subtitle style={{fontSize: 14}}>{inclineWord(value.checksCountTotal, "проверка")}, {inclineWord(value.failChecksCountTotal, "недостаток", true)}</ListItem.Subtitle>
+                                                            <ListItem.Subtitle style={{fontSize: 14}}>{inclineWord(value.failChecksCountTotal, "недостаток", true)}{ value.timestamp ? `, ${getTimeElapsed(value.timestamp)}` : null}</ListItem.Subtitle>
                                                         </ListItem.Content>
                                                         <ListItem.Chevron />
                                                     </ListItem>

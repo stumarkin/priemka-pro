@@ -85,7 +85,7 @@ export default function ApartmentScreen ({navigation, route}) {
     const overdueAfterSeconds = 60 * 60 *24;
     const [dictionary, setDictionary] = useState({});
     const ProDaysLeft = route.params.ProDaysLeft;
-    const updateStoredForms = () => route.params.updateStoredForms();
+    const getPreviousForms = () => route.params.getPreviousForms();
     
     // Dialog Add Room
     const [checkedRoomId, setCheckedRoomId] = useState();
@@ -162,6 +162,7 @@ export default function ApartmentScreen ({navigation, route}) {
         setForm(form);
         let formData = new FormData();
         const summary = {
+            timestamp: Date.now(),
             address: form.address,
             checksCountTotal: form.apartment
                 .map(room => {
@@ -196,7 +197,7 @@ export default function ApartmentScreen ({navigation, route}) {
             { headers: { 'Content-Type': 'multipart/form-data' } }
         ).then(response => {
             AsyncStorage.setItem(`form_${form.id}`, JSON.stringify(summary));
-            updateStoredForms();
+            getPreviousForms();
             setIsLoading(false);
         })
         .catch(err => {
@@ -251,7 +252,7 @@ export default function ApartmentScreen ({navigation, route}) {
                 console.log(res.data);
                 if (res.data.result){
                     AsyncStorage.removeItem(`form_${form.id}`)
-                    updateStoredForms()
+                    getPreviousForms()
                     navigation.navigate('Home');
                 } else {
                     console.log('Server deleteApartment failed: ' + res.data);
@@ -503,7 +504,7 @@ export default function ApartmentScreen ({navigation, route}) {
                         onPress={()=>{
                             deleteApartment(form)
                             alert('Квартира удалена успешно.')
-                            updateStoredForms()
+                            getPreviousForms()
                             navigation.navigate('Home')
                         }} 
                     />
