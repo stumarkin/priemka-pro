@@ -19,7 +19,7 @@ import {
     Skeleton
 } from '@rneui/themed';
 import { theme } from './theme';
-import axios from 'axios';
+import * as API from '../data/API';
 import * as SecureStore from 'expo-secure-store';
 
 import { init, track } from '@amplitude/analytics-react-native';
@@ -99,7 +99,7 @@ const inclineWord = ( howMany, ofWhat, humanicStyle = false ) => {
             }
         default: return `${howMany} ${ofWhat}`
     }
-  }
+}
 
 const  generateId = (length) => {
     let result = '';
@@ -164,7 +164,6 @@ export default function HomeScreen ({navigation}) {
 
     // Initial
     useEffect(() => {
-        // Device Id
         getDeviceId()
         .then(deviceId =>{ 
             setDeviceId(deviceId)
@@ -173,9 +172,7 @@ export default function HomeScreen ({navigation}) {
               
         } )
         
-
-        // Banner loading
-        axios.get(`https://priemka-pro.ru/api/v2/?method=getbanners`)
+        API.Get('getbanners')
         .then(res => {
             if (res.data.result === true ){
                 setBanners( res.data.banners );
@@ -184,8 +181,7 @@ export default function HomeScreen ({navigation}) {
             }
         })
         
-        // Need update?
-        axios.get(`https://priemka-pro.ru/api/v2/?method=getcurrentversion`)
+        API.Get('getcurrentversion')
         .then(res => {
             if (res.data.result === true ){
                 setNeedUpdate( appVersion != res.data.currentversion );
@@ -199,7 +195,7 @@ export default function HomeScreen ({navigation}) {
     // isPro
     useEffect(()=>{
         if (deviceId) {
-            axios.get(`https://priemka-pro.ru/api/v2/?method=ProDaysLeft&deviceid=${deviceId}`)
+            API.Get({method:'prodaysleft',deviceid: deviceId})
             .then(res => {
                 if (res.data.result){
                     setProDaysLeft( res.data.ProDaysLeft );
@@ -269,9 +265,9 @@ export default function HomeScreen ({navigation}) {
                     {
                         isInitialLoading ? (
                             <>
-                                <Skeleton key={0} animation="pulse" height={170} style={{borderRadius: 10}}/>
+                                <Skeleton key={0} animation="pulse" height={150} style={{borderRadius: 10}}/>
                                 <Divider  key={1} width={10} style={{ opacity: 0 }} />
-                                <Skeleton key={2} animation="pulse" height={170} />
+                                <Skeleton key={2} animation="pulse" height={150} />
                                 <Divider  key={3} width={10} style={{ opacity: 0 }} />
                                 <Skeleton key={4} animation="pulse" height={370} />
                             </>
@@ -279,7 +275,7 @@ export default function HomeScreen ({navigation}) {
                             <>
                                 { 
                                     needUpdate ? (
-                                        <BannerNeedUpdate/> 
+                                        <BannerNeedUpdate track={track}/> 
                                     ) : null
                                 }
 

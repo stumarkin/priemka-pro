@@ -14,7 +14,7 @@ import {
     Divider,
 } from '@rneui/themed';
 import { theme } from './theme';
-import axios from 'axios';
+import * as API from '../data/API';
 import * as SecureStore from 'expo-secure-store';
 
 
@@ -55,10 +55,9 @@ export default function RefundCalculationScreen ({navigation, route}) {
         
         const apiURL = 'https://priemka-pro.ru/api/v2/?method=requestrefund';
         setIsLoading(true);
-        axios.post( 
-            apiURL,
+        API.Post( 
+            {method: 'requestrefund'},
             {deviceId, username, userphone, square, refund, designType: designTypes[designTypeSelected].name},
-            {headers: { 'Content-Type': 'multipart/form-data'} }
         ).then(response => {
             if (response.data.result){
                 Alert.alert( 'Запрос отправлен! 👍', 'Мы получили ваш запрос, в течении дня с вами свяжется наш специалист по взысканию и ответит на все ваши вопросы.')

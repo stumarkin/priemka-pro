@@ -2,7 +2,8 @@ import {
     View, 
     Pressable, 
     ImageBackground,
-    Image
+    Image,
+    Linking
 } from 'react-native';
 import { 
     Text, 
@@ -22,15 +23,15 @@ export function BannerIsOverdued(){
     )
 }
 
-export function BannerNeedUpdate(){
+export function BannerNeedUpdate( props ){
     return (
         <BannerView 
             header="Обновите приложение"
             text="В последней версии испрелены ошибки и добавлены новые возможности."
             backgroundColor="#ffbf0f"
             onPress={ ()=>{
-                track('HomeScreen-BannerNeedUpdate-Press');
-                Linking.openURL("https://priemka-pro.ru/appupdate/")
+                props.track('HomeScreen-BannerNeedUpdate-Press');
+                Linking.openURL("https://apps.rustore.ru/app/com.stumarkin.priemkapro")
             } }
         /> 
     )

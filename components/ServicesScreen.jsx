@@ -14,7 +14,7 @@ import {
     Skeleton
 } from '@rneui/themed';
 import { theme } from './theme';
-import axios from 'axios';
+import * as API from '../data/API';
 import * as SecureStore from 'expo-secure-store';
 
 import { init, track } from '@amplitude/analytics-react-native';
@@ -46,8 +46,7 @@ export default function ServicesScreen ({navigation}) {
             track('ServicesScreen-View'); 
         } )
         
-        // Banner loading
-        axios.get(`https://priemka-pro.ru/api/v2/?method=getservicesbanners`)
+        API.Get(`getservicesbanners`)
         .then(res => {
             if (res.data.result === true ){
                 setBanners( res.data.banners );

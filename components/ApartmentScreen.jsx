@@ -24,7 +24,8 @@ import {
   Skeleton
 } from '@rneui/themed';
 import { theme } from './theme';
-import axios from 'axios';
+import * as API from '../data/API';
+
 import { init, track } from '@amplitude/analytics-react-native';
 
 
@@ -77,6 +78,10 @@ const getDeviceId = async () => {
 }
 
 export default function ApartmentScreen ({navigation, route}) {
+    const { 
+      formId, 
+      ProDaysLeft 
+    } = route.params
     const [deviceId, setDeviceId] = useState(null)
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -84,7 +89,6 @@ export default function ApartmentScreen ({navigation, route}) {
     const [isOverdue, setIsOverdue] = useState(false);
     const overdueAfterSeconds = 60 * 60 *24;
     const [dictionary, setDictionary] = useState({});
-    const ProDaysLeft = route.params.ProDaysLeft;
     const getPreviousForms = () => route.params.getPreviousForms();
     
     // Dialog Add Room
@@ -131,17 +135,16 @@ export default function ApartmentScreen ({navigation, route}) {
           track('ApartmentScreen-View'); 
       } )
 
-      axios.get(`https://priemka-pro.ru/api/v2/?method=getdictionary`)
+      API.Get('getdictionary')
       .then(res => {
         const dictionary = res.data ;
         setDictionary( dictionary );
-        const url = `https://priemka-pro.ru/api/v2/?method=getform${route.params.formId ? `&id=${route.params.formId}` : '' }`
         
-        axios.get(url)
-        .then(res => {
+        API.Get( (formId ? {method:'getform', id: formId} : 'getform') )
+        .then(res => { 
             let form = res.data;
             setAddress(form.address);
-            if (!route.params.formId) {
+            if (!formId) {
               form.timestampCreate = Date.now();
               ['room','kitchen','bathroom','corridor','general']. forEach( room => {
                 form = addRoom(room, form, dictionary );
@@ -160,7 +163,7 @@ export default function ApartmentScreen ({navigation, route}) {
     const sendForm = ( ) => {
         form.deviceid = deviceId;
         setForm(form);
-        let formData = new FormData();
+        let data = new FormData();
         const summary = {
             timestamp: Date.now(),
             address: form.address,
@@ -187,15 +190,12 @@ export default function ApartmentScreen ({navigation, route}) {
                     return sum += roomChecksCountInAllSections
                 }, 0),
         }
-        formData.append('form', JSON.stringify(form));
-        formData.append('summary', JSON.stringify(summary));
-        const apiURL = 'https://priemka-pro.ru/api/v2/?method=setform&token=' + form.token;
+        data.append('form', JSON.stringify(form));
+        data.append('summary', JSON.stringify(summary));
         setIsLoading(true);
-        axios.post(
-            apiURL,
-            formData,
-            { headers: { 'Content-Type': 'multipart/form-data' } }
-        ).then(response => {
+
+        API.Post( {method: 'setform', token: form.token}, data )
+        .then(response => {
             AsyncStorage.setItem(`form_${form.id}`, JSON.stringify(summary));
             getPreviousForms();
             setIsLoading(false);
@@ -243,17 +243,17 @@ export default function ApartmentScreen ({navigation, route}) {
 
     const deleteApartment = () => {
         if (form.id) {
-            console.log(form.id);
-            console.log(form.token);
-
-            const apiURL = 'https://priemka-pro.ru/api/v2/?method=deleteform&id=' + form.id + '&token=' + form.token;
-            axios.get( apiURL)
+            API.Get( {
+              method: 'deleteform',
+              id: form.id,
+              token: form.token
+            })
             .then( res=> {
-                console.log(res.data);
                 if (res.data.result){
                     AsyncStorage.removeItem(`form_${form.id}`)
                     getPreviousForms()
-                    navigation.navigate('Home');
+                    Alert.alert('Её больше нет!')
+                    navigation.goBack()
                 } else {
                     console.log('Server deleteApartment failed: ' + res.data);
                 }
@@ -421,7 +421,7 @@ export default function ApartmentScreen ({navigation, route}) {
           <Divider width={10} style={{ opacity: 0 }} />
 
           {
-            route.params.formId && ProDaysLeft ? (
+            formId && ProDaysLeft ? (
                 <Button 
                       title="Удалить квартиру"
                       type="clear"
@@ -499,9 +499,7 @@ export default function ApartmentScreen ({navigation, route}) {
                         title="Да, удалить" 
                         onPress={()=>{
                             deleteApartment(form)
-                            alert('Квартира удалена успешно.')
-                            getPreviousForms()
-                            navigation.navigate('Home')
+                            toggleApartmentDeleteDialogIsVisible()
                         }} 
                     />
                 </Dialog.Actions>
