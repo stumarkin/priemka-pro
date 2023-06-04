@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import {BannerIsOverdued} from './BannerView';
-
 import { 
     ScrollView, 
     StyleSheet, 
     TextInput,
-    View
+    View,
+    KeyboardAvoidingView,
+    Platform,
+    TouchableWithoutFeedback,
+    Keyboard,
 } from 'react-native';
 import { 
     Badge,
@@ -23,6 +26,8 @@ import {
 import { theme } from './theme';
 import * as Haptics from 'expo-haptics';
 import { init, track } from '@amplitude/analytics-react-native';
+import { useHeaderHeight } from '@react-navigation/elements'
+
 
 const getDeviceId = async () => {
     let deviceId = await SecureStore.getItemAsync('deviceId');
@@ -265,216 +270,248 @@ export default function RoomScreen ({navigation, route}) {
         )
     })
 
+//hack
 
+    const [isScrollEnabled, setIsScrollEnabled] = useState(true); 
+  
+  function onKeyboardWillShow() {
+    setIsScrollEnabled(false);
+  }
+
+  function onKeyboardDidShow() {
+    setIsScrollEnabled(true);
+  }
+
+  useEffect(() => {
+    const subKWS = Keyboard.addListener("keyboardWillShow", onKeyboardWillShow);
+    const subKDS = Keyboard.addListener("keyboardDidShow", onKeyboardDidShow);
+
+    return () => {
+      subKWS.remove();
+      subKDS.remove();
+    };
+  }, []);
+
+    const height = useHeaderHeight()
 
     return (
-      <ScrollView style={{ paddingTop: 20, paddingLeft: 20, paddingBottom: 50, paddingRight: 20}}>
-        <ThemeProvider theme={theme} >
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={height + 47}
+                style={styles.container}
+            >
+                <ScrollView>
+                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                        <ThemeProvider theme={theme} >
+                            <View
+                                style={styles.inner}
+                            >
+                                <View>
+                                    {
+                                        isOverdue > 0 ? (
+                                            <BannerIsOverdued />
+                                        ) : (
+                                            <View key="add">
+                                                <Button
+                                                    type="clear"
+                                                    onPress={() => {
+                                                        track('RoomScreen-AddChecks-Press');
+                                                        toggleRoomsDialogIsVisible()
+                                                    }}
+                                                >
+                                                    <Icon type='ionicon' name="add-circle-outline" color={theme.lightColors.primary} /> Добавить проверки
+                                                </Button>
+                                                <Divider width={10} style={{ opacity: 0 }} />
+                                            </View>
+                                        )
+                                    }
 
-            {
-                isOverdue > 0 ? (
-                    <BannerIsOverdued/> 
-                ) : (
-                    <View key="add">
-                        <Button 
-                            type="clear" 
-                            onPress={()=>{
-                                track('RoomScreen-AddChecks-Press');
-                                toggleRoomsDialogIsVisible()
-                            }}
-                        >
-                            <Icon type='ionicon' name="add-circle-outline" color={theme.lightColors.primary} /> Добавить проверки
-                        </Button>
-                        <Divider width={10} style={{ opacity: 0 }} />
-                    </View>
-                )
-            }
+                                    {roomSections}
 
-            { roomSections }
+                                    <TextInput
+                                        scrollEnabled={isScrollEnabled}
+                                        key="comment"
+                                        multiline={true}
+                                        numberOfLines={4}
+                                        placeholder="Добавьте замечания в свободной форме"
+                                        maxLength={1000}
+                                        onChangeText={(text) => setComment(text.replace(/\n/g, "<br>"))}
+                                        onEndEditing={onEndEditingComment}
+                                        value={comment.replace(/<br>/g, "\n")}
+                                        style={{ padding: 15, height: 150, backgroundColor: 'white', borderWidth: 1, borderColor: theme.lightColors.grey4, fontSize: 18 }}
+                                    />
 
-            <TextInput
-                key="comment"
-                multiline={true}
-                numberOfLines={4}
-                placeholder="Добавьте замечания в свободной форме"
-                maxLength={1000}
-                onChangeText={(text)=>setComment(text.replace(/\n/g, "<br>"))}
-                onEndEditing={onEndEditingComment}
-                value={comment.replace(/<br>/g, "\n")}
-                style={{padding: 15, height: 150, backgroundColor: 'white', borderWidth: 1, borderColor: theme.lightColors.grey4, fontSize: 18}}
-            />
-            
-            
-            <Divider key="d1" width={350} style={{ opacity: 0 }} />
-            
-            <Dialog
-                key='addChecks'
-                isVisible={roomsDialogIsVisible}
-                onBackdropPress={toggleRoomsDialogIsVisible}
-                >
-                <Dialog.Title title="Что будем проверять в этой комнате?"/>
-                <ScrollView style={{height: "70%"}}>
-                    {form?.nested_templates.filter( item => (item.type=='section') ).map((section, i) => (
-                        <CheckBox
-                            key={i}
-                            title={dictionary[section.id].name}
-                            checkedIcon="dot-circle-o"
-                            uncheckedIcon="circle-o"
-                            checked={checkedSectionId === section.id}
-                            onPress={() => setCheckedSectionId(section.id)}
-                            containerStyle={{ 
-                                backgroundColor: 'white', 
-                                borderWidth: 0 
-                            }}
-                        />
-                    ))}
+                                    <Dialog
+                                        key='addChecks'
+                                        isVisible={roomsDialogIsVisible}
+                                        onBackdropPress={toggleRoomsDialogIsVisible}
+                                    >
+                                        <Dialog.Title title="Что будем проверять в этой комнате?" />
+                                        <ScrollView style={{ height: "70%" }}>
+                                            {form?.nested_templates.filter(item => (item.type == 'section')).map((section, i) => (
+                                                <CheckBox
+                                                    key={i}
+                                                    title={dictionary[section.id].name}
+                                                    checkedIcon="dot-circle-o"
+                                                    uncheckedIcon="circle-o"
+                                                    checked={checkedSectionId === section.id}
+                                                    onPress={() => setCheckedSectionId(section.id)}
+                                                    containerStyle={{
+                                                        backgroundColor: 'white',
+                                                        borderWidth: 0
+                                                    }}
+                                                />
+                                            ))}
+                                        </ScrollView>
+                                        <Dialog.Actions>
+                                            <Dialog.Button
+                                                title="Добавить"
+                                                onPress={() => {
+                                                    track('RoomScreen-AddChecks-DialogChecksChoise-Press', { checkedSectionId });
+                                                    room = addSection(checkedSectionId, form, room);
+                                                    sendForm();
+                                                    toggleRoomsDialogIsVisible();
+                                                }}
+                                            />
+                                            <Dialog.Button title="Отмена" onPress={toggleRoomsDialogIsVisible} />
+                                        </Dialog.Actions>
+                                    </Dialog>
+
+                                    <Dialog
+                                        key='editRoom'
+                                        isVisible={roomEditDialogIsVisible}
+                                        onBackdropPress={toggleRoomEditDialogIsVisible}
+                                    >
+                                        <Dialog.Title title="Название комнаты" />
+                                        <TextInput
+                                            style={{
+                                                height: 40,
+                                                backgroundColor: "#FFFFFF",
+                                                borderColor: "#AAA",
+                                                borderWidth: 1,
+                                                padding: 10,
+                                            }}
+                                            onChangeText={setEditRoomName}
+                                            value={editRoomName}
+                                            placeholder="Введите название комнаты"
+                                        />
+                                        <Dialog.Actions>
+                                            <Dialog.Button
+                                                title="Сохранить"
+                                                onPress={() => {
+                                                    onEndRoomEdit();
+                                                    toggleRoomEditDialogIsVisible();
+                                                }}
+                                            />
+                                            <Dialog.Button
+                                                titleStyle={{ color: "red" }}
+                                                title="Удалить комнату"
+                                                onPress={() => {
+                                                    toggleRoomEditDialogIsVisible();
+                                                    toggleRoomDeleteDialogIsVisible();
+                                                }}
+                                            />
+                                        </Dialog.Actions>
+                                    </Dialog>
+
+
+                                    <Dialog
+                                        key='editSection'
+                                        isVisible={sectionEditDialogIsVisible}
+                                        onBackdropPress={toggleSectionEditDialogIsVisible}
+                                    >
+                                        <Dialog.Title title="Название проверок" />
+                                        <TextInput
+                                            style={{
+                                                height: 40,
+                                                backgroundColor: "#FFFFFF",
+                                                borderColor: "#AAA",
+                                                borderWidth: 1,
+                                                padding: 10,
+                                            }}
+                                            onChangeText={setEditSectionName}
+                                            value={editSectionName}
+                                            placeholder="Введите название проверок"
+                                        />
+                                        <Dialog.Actions>
+                                            <Dialog.Button
+                                                title="Сохранить"
+                                                onPress={() => {
+                                                    onEndSectionEdit();
+                                                    toggleSectionEditDialogIsVisible();
+                                                }}
+                                            />
+                                            <Dialog.Button
+                                                titleStyle={{ color: "red" }}
+                                                title="Удалить проверки"
+                                                onPress={() => {
+                                                    deleteSection(editSection);
+                                                    toggleSectionEditDialogIsVisible();
+                                                }}
+                                            />
+                                        </Dialog.Actions>
+                                    </Dialog>
+
+
+                                    <Dialog
+                                        key='confirmDelete'
+                                        isVisible={roomDeleteDialogIsVisible}
+                                        onBackdropPress={toggleRoomDeleteDialogIsVisible}
+                                    >
+                                        <Dialog.Title title="Точно удалить?" />
+                                        <Text>
+                                            Удалить комнату и все выбранные для неё проверки и выявленные недостатки? Данное действие необратимо.
+                                        </Text>
+                                        <Dialog.Actions>
+                                            <Dialog.Button
+                                                title="Отменить"
+                                                onPress={toggleRoomDeleteDialogIsVisible}
+                                            />
+                                            <Dialog.Button
+                                                titleStyle={{ color: "red" }}
+                                                title="Да, удалить"
+                                                onPress={() => {
+                                                    deleteRoom(room);
+                                                    navigation.goBack();
+                                                }}
+                                            />
+                                        </Dialog.Actions>
+                                    </Dialog>
+
+
+                                    <Dialog
+                                        key='checkDetail'
+                                        isVisible={checkDetailsDialogIsVisible}
+                                        onBackdropPress={toggleCheckDetailsDialogIsVisible}
+                                    >
+                                        <Dialog.Title title={dictionary[checkDetails.id]?.name} />
+                                        <Text>{dictionary[checkDetails.id]?.tint}</Text>
+                                        <Divider />
+                                        {
+                                            !isOverdue ? (
+                                                <ListItem key="checkD">
+                                                    <ListItem.Content>
+                                                        <ListItem.Title>Есть недостаток</ListItem.Title>
+                                                    </ListItem.Content>
+                                                    <Switch
+                                                        value={!checkDetails.value}
+                                                        onValueChange={() => {
+                                                            checkDetails.value = !checkDetails.value;
+                                                            sendForm();
+                                                            forceUpdate();
+                                                        }}
+                                                        color="#900603"
+                                                    />
+                                                </ListItem>
+                                            ) : null
+                                        }
+                                    </Dialog>
+                                </View>
+                            </View>
+                        </ThemeProvider>
+                    </TouchableWithoutFeedback>
                 </ScrollView>
-                <Dialog.Actions>
-                    <Dialog.Button
-                    title="Добавить"
-                    onPress={() => {
-                        track('RoomScreen-AddChecks-DialogChecksChoise-Press', { checkedSectionId });
-                        room = addSection(checkedSectionId, form, room);
-                        sendForm(); 
-                        toggleRoomsDialogIsVisible();
-                    }}
-                    />
-                    <Dialog.Button title="Отмена" onPress={toggleRoomsDialogIsVisible} />
-                </Dialog.Actions>
-            </Dialog>
-
-            <Dialog
-                key='editRoom'
-                isVisible={roomEditDialogIsVisible}
-                onBackdropPress={toggleRoomEditDialogIsVisible}
-            >
-                <Dialog.Title title="Название комнаты"/>
-                <TextInput
-                    style={{
-                        height: 40,
-                        backgroundColor: "#FFFFFF",
-                        borderColor: "#AAA",
-                        borderWidth: 1,
-                        padding: 10,
-                    }}
-                    onChangeText={ setEditRoomName }
-                    value={editRoomName}
-                    placeholder="Введите название комнаты"
-                />
-                <Dialog.Actions>
-                    <Dialog.Button
-                        title="Сохранить"
-                        onPress={() => {
-                            onEndRoomEdit();
-                            toggleRoomEditDialogIsVisible();
-                        }}
-                    />
-                    <Dialog.Button 
-                        titleStyle={{color: "red"}}
-                        title="Удалить комнату" 
-                        onPress={()=>{
-                            toggleRoomEditDialogIsVisible(); 
-                            toggleRoomDeleteDialogIsVisible(); 
-                        }}
-                    />
-                </Dialog.Actions>
-            </Dialog>
-            
-            
-            <Dialog
-                key='editSection'
-                isVisible={sectionEditDialogIsVisible}
-                onBackdropPress={toggleSectionEditDialogIsVisible}
-            >
-                <Dialog.Title title="Название проверок"/>
-                <TextInput
-                    style={{
-                        height: 40,
-                        backgroundColor: "#FFFFFF",
-                        borderColor: "#AAA",
-                        borderWidth: 1,
-                        padding: 10,
-                    }}
-                    onChangeText={ setEditSectionName }
-                    value={editSectionName}
-                    placeholder="Введите название проверок"
-                />
-                <Dialog.Actions>
-                    <Dialog.Button
-                        title="Сохранить"
-                        onPress={() => {
-                            onEndSectionEdit();
-                            toggleSectionEditDialogIsVisible();
-                        }}
-                    />
-                    <Dialog.Button 
-                        titleStyle={{color: "red"}}
-                        title="Удалить проверки" 
-                        onPress={()=>{
-                            deleteSection(editSection);
-                            toggleSectionEditDialogIsVisible(); 
-                        }}
-                    />
-                </Dialog.Actions>
-            </Dialog>
-
-
-            <Dialog
-                key='confirmDelete'
-                isVisible={roomDeleteDialogIsVisible}
-                onBackdropPress={toggleRoomDeleteDialogIsVisible}
-            >
-                <Dialog.Title title="Точно удалить?"/>
-                <Text>
-                    Удалить комнату и все выбранные для неё проверки и выявленные недостатки? Данное действие необратимо.
-                </Text>
-                <Dialog.Actions>
-                    <Dialog.Button
-                        title="Отменить"
-                        onPress={toggleRoomDeleteDialogIsVisible}
-                    />
-                    <Dialog.Button 
-                        titleStyle={{color: "red"}}
-                        title="Да, удалить" 
-                        onPress={()=>{
-                            deleteRoom(room);
-                            navigation.goBack();
-                        }} 
-                    />
-                </Dialog.Actions>
-            </Dialog>
-
-
-            <Dialog
-                key='checkDetail'
-                isVisible={checkDetailsDialogIsVisible}
-                onBackdropPress={toggleCheckDetailsDialogIsVisible}
-            >
-                <Dialog.Title title={dictionary[checkDetails.id]?.name}/>
-                <Text>{dictionary[checkDetails.id]?.tint}</Text>
-                <Divider/>
-                {
-                    !isOverdue ? (
-                        <ListItem key="checkD">
-                            <ListItem.Content>
-                                <ListItem.Title>Есть недостаток</ListItem.Title>
-                            </ListItem.Content>
-                            <Switch
-                                value={!checkDetails.value}
-                                onValueChange={ ()=>{
-                                    checkDetails.value = !checkDetails.value;
-                                    sendForm(); 
-                                    forceUpdate();
-                                } }
-                                color="#900603"
-                                />
-                        </ListItem>
-                    ) : null
-                }
-            </Dialog>
-
-        </ThemeProvider>
-      </ScrollView>
+            </KeyboardAvoidingView>
     )
     
   };
@@ -486,4 +523,21 @@ export default function RoomScreen ({navigation, route}) {
     ml10: {
       paddingLeft: 20,
     },
+    container: {
+      flex: 1,
+    },
+    inner: {
+      padding: 20,
+      flex: 1,
+      justifyContent: 'space-around',
+    },
+    textInput: {
+        height: 40,
+        borderBottomColor: theme.lightColors.grey4,
+        borderBottomWidth: 2,
+        fontSize: 19,
+        padding: 2,
+        marginRight: 10,
+        width: 255
+    }
   });

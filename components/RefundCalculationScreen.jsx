@@ -6,7 +6,12 @@ import {
     View, 
     ScrollView, 
     TextInput,
-    Text
+    Text,
+    KeyboardAvoidingView,
+    Platform,
+    TouchableWithoutFeedback,
+    Keyboard,
+    StyleSheet
 } from 'react-native';
 import { 
     ThemeProvider, 
@@ -16,6 +21,7 @@ import {
 import { theme } from './theme';
 import * as API from '../data/API';
 import * as SecureStore from 'expo-secure-store';
+import { useHeaderHeight } from '@react-navigation/elements'
 
 
 import { init, track } from '@amplitude/analytics-react-native';
@@ -52,7 +58,6 @@ export default function RefundCalculationScreen ({navigation, route}) {
 
     // Sending to server
     const sendRequestRefundForm = () => {
-        
         const apiURL = 'https://priemka-pro.ru/api/v2/?method=requestrefund';
         setIsLoading(true);
         API.Post( 
@@ -74,92 +79,106 @@ export default function RefundCalculationScreen ({navigation, route}) {
         });
     }
 
+    const height = useHeaderHeight()
 
     return (
-        <ScrollView>
-            <View style={{ padding: 20 }}>
-                <ThemeProvider theme={theme}>
-                     
-                    <BannerView 
-                        backgroundImage='https://priemka-pro.ru/webview/assets/1percent.png?q=1'
-                        header={<Text style={{fontSize: 26}}>{refund.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + ' ₽'}</Text>}
-                        text={`Возможное возмещение по вашей квартире площадью ${square}м² ${designTypes[designTypeSelected].name.toLowerCase()}`}
+        <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+            keyboardVerticalOffset={height + 47}
+            style={styles.container}
+        > 
+            <ScrollView>
+                <TouchableWithoutFeedback  onPress={Keyboard.dismiss}>
+                    <ThemeProvider theme={theme}>
+                        <View
+                            style={styles.inner}
+                        >
+                            <View>
 
-                    />
-                    
-                    <BannerView 
-                        header='Возмещение "под ключ"'
-                        text={
-                            `Вы ни за что не платите до поступления к вам возмещения. Все необходимые мероприятия за наш счет:\n\n` +
-                            `– Экспертиза (обычно 25 000₽)\n\n` +
-                            `– Отправка требований\n\n` +
-                            `– Судебное производство\n\n` +
-                            `– Исполнительное производство\n\n` +
-                            `– Аппеляция`
-                        }
-                        actionControls={
-                            <>
-                                <Divider width={10} style={{ opacity: 0 }} />
-                                <TextInput
-                                    style={{
-                                        height: 40,
-                                        borderBottomColor: theme.lightColors.grey4,
-                                        borderBottomWidth: 2,
-                                        fontSize: 19,
-                                        padding: 2,
-                                        marginRight: 10,
-                                        width: 255
-                                    }}
-                                    inputMode='text'
-                                    onChangeText={setUsername}
-                                    placeholder="Ваше имя"
-                                    value={username}
+                                <BannerView 
+                                    backgroundImage='https://priemka-pro.ru/webview/assets/1percent.png?q=1'
+                                    header={<Text style={{fontSize: 26}}>{refund.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + ' ₽'}</Text>}
+                                    text={`Возможное возмещение по вашей квартире площадью ${square}м² ${designTypes[designTypeSelected].name.toLowerCase()}`}
                                 />
-                                <Divider width={20} style={{ opacity: 0 }} />
-
                                 
-                                <TextInput
-                                    style={{
-                                        height: 40,
-                                        borderBottomColor: theme.lightColors.grey4,
-                                        borderBottomWidth: 2,
-                                        fontSize: 19,
-                                        padding: 2,
-                                        marginRight: 10,
-                                        width: 255
-                                    }}
-                                    inputMode='numeric'
-                                    onChangeText={setUserphone}
-                                    placeholder="Ваш телефон"
-                                    value={userphone}
+                                <BannerView 
+                                    header='Возмещение "под ключ"'
+                                    text={
+                                        `Вы ни за что не платите до поступления к вам возмещения. Все необходимые мероприятия за наш счет:\n\n` +
+                                        `– Экспертиза (обычно 25 000₽)\n\n` +
+                                        `– Отправка требований\n\n` +
+                                        `– Судебное производство\n\n` +
+                                        `– Исполнительное производство\n\n` +
+                                        `– Аппеляция`
+                                    }
+                                    actionControls={
+                                        <>
+                                            <TextInput
+                                                style={styles.textInput}
+                                                inputMode='text'
+                                                onChangeText={setUsername}
+                                                placeholder="Ваше имя"
+                                                value={username}
+                                            />
+                                            <Divider width={20} style={{ opacity: 0 }} />
+                                            
+                                            <TextInput
+                                                style={styles.textInput}
+                                                inputMode='numeric'
+                                                onChangeText={setUserphone}
+                                                placeholder="Ваш телефон"
+                                                value={userphone}
+                                            />
+
+                                            <Divider width={20} style={{ opacity: 0 }} />
+                                        </>
+                                    }
+                                    button={
+                                        <Button
+                                            title='Узнать подробнее' 
+                                            loading={isLoading}
+                                            disabled={isLoading}
+                                            onPress={() =>{
+                                                if ( username!='' && + userphone > 1000000000){
+                                                    track('RefundCalculationScreen-RequestRefund-Press', { square, refund });
+                                                    sendRequestRefundForm();
+                                                    // navigation.navigate('RefundCalculation', {title: '', square, designTypes, designTypeSelected});
+                                                } else {
+                                                    Alert.alert('Что-то забыли...', 'Укажите ваше имя и контактный телефон для отправки запрос на консультацию по услуге.')
+                                                }
+                                            }}
+                                        />
+                                    }
                                 />
 
-                                
-            
-                                <Divider width={20} style={{ opacity: 0 }} />
-                                <Button
-                                    title='Узнать подробнее' 
-                                    loading={isLoading}
-                                    disabled={isLoading}
-                                    onPress={() =>{
-                                        if ( username!='' && + userphone > 1000000000){
-                                            track('RefundCalculationScreen-RequestRefund-Press', { square, refund });
-                                            sendRequestRefundForm();
-                                            // navigation.navigate('RefundCalculation', {title: '', square, designTypes, designTypeSelected});
-                                        } else {
-                                            Alert.alert('Что-то забыли...', 'Укажите ваше имя и контактный телефон для отправки запрос на консультацию по услуге.')
-                                        }
-                                    }}
-                                />
-                            </>
-                        }
-                    />
-                    
-                    {/* <Text style={{ textAlign: 'center', fontSize: 12 }}>{deviceId}</Text> */}
-                    <StatusBar style="auto" />
-                </ThemeProvider>
-            </View>
-        </ScrollView>
+                                <StatusBar style="auto" />
+                            </View>
+                            <Divider width={50} style={{ opacity: 0 }} />
+                        </View>
+                    </ThemeProvider>
+                </TouchableWithoutFeedback>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 }
 
+
+const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    inner: {
+      padding: 20,
+      flex: 1,
+      justifyContent: 'space-around',
+    },
+    textInput: {
+        height: 40,
+        borderBottomColor: theme.lightColors.grey4,
+        borderBottomWidth: 2,
+        fontSize: 19,
+        padding: 2,
+        marginRight: 10,
+        width: 255
+    }
+  });

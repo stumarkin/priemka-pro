@@ -67,8 +67,8 @@ export default function ServicesScreen ({navigation}) {
 
     // Banners with sections sorting
     const bannersUI = banners.filter( ({section}) => !bannerSection || section==bannerSection ).map( (banner, i) => 
-        {console.log( banner )
-        return <BannerView {...banner} i  onPress={() =>{
+        {
+        return <BannerView {...banner} key={i}  onPress={() =>{
             track('ServicesScreen-Banner-Press', { banner: banner.header });
             if (banner.outerUrl){
                 Linking.openURL(banner.outerUrl)
@@ -116,15 +116,17 @@ export default function ServicesScreen ({navigation}) {
                     {
                         isInitialLoading ? (
                             <>
-                                <Skeleton key={0} animation="pulse" height={170} style={{borderRadius: 10}}/>
-                                <Divider  key={1} width={10} style={{ opacity: 0 }} />
-                                <Skeleton key={2} animation="pulse" height={170} />
-                                <Divider  key={3} width={10} style={{ opacity: 0 }} />
-                                <Skeleton key={4} animation="pulse" height={370} />
+                                <Skeleton animation="pulse" height={170} style={{borderRadius: 10}}/>
+                                <Divider  width={10} style={{ opacity: 0 }} />
+                                <Skeleton animation="pulse" height={170} />
+                                <Divider  width={10} style={{ opacity: 0 }} />
+                                <Skeleton animation="pulse" height={370} />
                             </>
                         ) : (
                             <>
-                                <View style={[{
+                                <View 
+                                
+                                    style={[{
                                                 flexDirection: 'row',
                                                 flexWrap: 'wrap'
                                             }]}

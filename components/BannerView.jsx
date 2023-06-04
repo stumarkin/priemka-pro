@@ -40,7 +40,6 @@ export function BannerNeedUpdate( props ){
 export  function BannerView (props) {
     const {
         onPress, 
-        i, 
         backgroundImage, 
         backgroundColor = (backgroundColor || '#FFF'), 
         header, 
@@ -51,7 +50,7 @@ export  function BannerView (props) {
         button
     } = props;
     return (
-        <View key={i}>
+        <View>
             <Pressable onPress={onPress}>
                 <ImageBackground 
                     // source={ backgroundImage ? {uri: backgroundImage} : null } 
@@ -110,13 +109,13 @@ export  function BannerView (props) {
                         }
                         {   // Text
                             backgroundImage ? (
-                                <Image
-                                    width='30%' 
-                                    style={{ }}
-                                    source={ backgroundImage ? {uri: backgroundImage} : null } 
-                                    resizeMode="contain" 
-                                    
-                              />
+                                    <Image
+                                        style={{width:'30%'}}
+                                        source={ backgroundImage ? {uri: backgroundImage} : null } 
+                                        resizeMode="contain" 
+                                        
+                                  />
+                                
                             ) : null 
                         }
                     </View>

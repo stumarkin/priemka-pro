@@ -6,21 +6,16 @@ import ServicesScreen from './components/ServicesScreen';
 import RefundScreen from './components/RefundScreen';
 import RefundCalculationScreen from './components/RefundCalculationScreen';
 import WebviewScreen from './components/WebviewScreen';
-import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { 
-  Icon,
-} from '@rneui/themed';
+import { Icon } from '@rneui/themed';
 import * as NavigationBar from 'expo-navigation-bar';
 
-import { WebView } from 'react-native-webview';
-
 const Tab = createBottomTabNavigator();
-
 const Stack = createNativeStackNavigator();
 
-function HomeScreen1() {
+function HomeScreenTabs() {
   return (
     <Tab.Navigator>
         <Tab.Screen 
@@ -46,13 +41,10 @@ function HomeScreen1() {
             tabBarLabel: 'Возмещение',
             tabBarIcon: ({ color, size }) => (
               <Icon 
-              name="wallet-outline" 
-              type="ionicon" 
-              
+                name="wallet-outline" 
+                type="ionicon" 
               />
-              
             ),
-            // tabBarBadge: 3,
           }}
         />
 
@@ -64,13 +56,10 @@ function HomeScreen1() {
             tabBarLabel: 'Услуги',
             tabBarIcon: ({ color, size }) => (
               <Icon 
-              name="ios-albums-outline" 
-              type="ionicon" 
-              
+                name="ios-albums-outline" 
+                type="ionicon" 
               />
-              
             ),
-            // tabBarBadge: 3,
           }}
         />
     </Tab.Navigator>
@@ -86,8 +75,8 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator>
       <Stack.Screen
-        name="Home"
-        component={HomeScreen1} 
+        name="HomeTab"
+        component={HomeScreenTabs} 
         options={{headerShown: false}}
       />
       <Stack.Screen 

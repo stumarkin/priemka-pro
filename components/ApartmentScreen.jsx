@@ -321,7 +321,7 @@ export default function ApartmentScreen ({navigation, route}) {
                 </ListItem.Content>
                 <ListItem.Chevron />
             </ListItem>
-            <Divider width={10} style={{ opacity: 0 }} />
+            <Divider key={room.id+'d'} width={10} style={{ opacity: 0 }} />
           </>
 
         )
@@ -330,18 +330,18 @@ export default function ApartmentScreen ({navigation, route}) {
 
     return (
       <>
-      { isLoading ? <Text style={{ backgroundColor: "#FEBE00", textAlign: "center", fontSize: 12, padding: 5 }}>Обновление данных</Text> : null }
+      { isLoading ? <Text key={'isLoading'} style={{ backgroundColor: "#FEBE00", textAlign: "center", fontSize: 12, padding: 5 }}>Обновление данных</Text> : null }
       <ScrollView style={{ padding: 20}}>
         <ThemeProvider theme={theme} >
                 
                 { 
                     isOverdue ? (
-                        <BannerIsOverdued/> 
+                        <BannerIsOverdued key='isOverdued'/> 
                     ) : null
                 }
 
                 <BannerView 
-                    key="address"
+                    key={"address"}
                     header="Адрес квартиры"
                     text="Используется в отчете и поможет найти квартиру среди других приёмок"
                     actionControls={
@@ -363,7 +363,7 @@ export default function ApartmentScreen ({navigation, route}) {
                 />
 
                 <BannerView 
-                    key="rooms"
+                    key={"rooms"}
                     header="Комнаты и проверки"
                     actionControls={apartmentRoomsUI}
                     button={
@@ -380,7 +380,7 @@ export default function ApartmentScreen ({navigation, route}) {
                 />
 
                 <BannerView 
-                    key="report"
+                    key={"report"}
                     header="Отчет"
                     text={`Всего ${inclineWord(checksCountTotal, "проверка")} и в них ${inclineWord(failChecksCountTotal, "недостаток", true)}`}
                     button={
@@ -418,11 +418,11 @@ export default function ApartmentScreen ({navigation, route}) {
                 />
 
           
-          <Divider width={10} style={{ opacity: 0 }} />
 
           {
             formId && ProDaysLeft ? (
                 <Button 
+                      key='deleteButton'
                       title="Удалить квартиру"
                       type="clear"
                       titleStyle={{ color: "red"}}
@@ -431,13 +431,11 @@ export default function ApartmentScreen ({navigation, route}) {
             ) : null
           }
           
-          <Divider width={10} style={{ opacity: 0 }} />
+          <Divider key='lastdivider' width={10} style={{ opacity: 0 }} />
          
-          <Text style={{textAlign: 'center', fontSize: 12, color: 'lightgrey'}}>{form.id}</Text>
-
-          <Divider width={20} style={{ opacity: 0 }} />
 
           <Dialog
+            key={'addroom'}
             isVisible={roomsDialogIsVisible}
             onBackdropPress={toggleRoomsDialogIsVisible}
           >
@@ -481,7 +479,7 @@ export default function ApartmentScreen ({navigation, route}) {
           </Dialog>
 
           <Dialog
-                key='confirmDelete'
+                key={'confirmDelete'}
                 isVisible={apartmentDeleteDialogIsVisible}
                 onBackdropPress={toggleApartmentDeleteDialogIsVisible}
             >

@@ -218,8 +218,8 @@ export default function HomeScreen ({navigation}) {
     // Banners with sections sorting
     const bannersUI = {}
     const bannerSections = banners.map(({section})=>(section)).filter( (item, i, arr) => arr.indexOf(item) === i );
-    bannerSections.forEach( section_ => {bannersUI[section_] = banners.filter( ({section}) => section == section_ ).map( (banner, i) => (
-        <BannerView {...banner} i  onPress={() =>{
+    bannerSections.forEach( section_ => {bannersUI[section_] = banners.filter( ({section}) => section == section_ ).map( (banner, key) => (
+        <BannerView {...banner} key={key} onPress={() =>{
             track('HomeScreen-Banner-Press', {banner: banner.header }); 
             navigation.navigate('Webview', {title: '', deviceid: deviceId, callback: ()=>{setCounter(counter+1)}, url: banner.webviewUrl + (banner.webviewUrl.indexOf('?')>-1 ? '&' : '?') + 'deviceid=' + deviceId })
          }}/>
@@ -231,6 +231,7 @@ export default function HomeScreen ({navigation}) {
             <View style={{ padding: 20, paddingTop: 100}}>
                 <ThemeProvider theme={theme}>
                     <View
+                        key={'header'}
                         style={{
                             justifyContent: 'space-between', 
                             flexDirection: 'row'
@@ -275,14 +276,14 @@ export default function HomeScreen ({navigation}) {
                             <>
                                 { 
                                     needUpdate ? (
-                                        <BannerNeedUpdate track={track}/> 
+                                        <BannerNeedUpdate key={'needupdate'} track={track}/> 
                                     ) : null
                                 }
 
                                 { !ProDaysLeft ? bannersUI.top : bannersUI.pro}
 
                                 <BannerView 
-                                    i="new"
+                                    key={'new'}
                                     header='Новая приёмка'
                                     text= { 
                                         !ProDaysLeft ? (
@@ -304,7 +305,7 @@ export default function HomeScreen ({navigation}) {
                                 />                
                                 
                                 <BannerView 
-                                    i="prev"
+                                    key={'prev'}
                                     header='Предыдущие приёмки'
                                     text= { previousForms.length==0 ? 'Здесь появятся все ваши приемки. Указывайте адрес приёмки для удобного поиска в общем списке' : null }
                                     actionControls={
